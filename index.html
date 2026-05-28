@@ -575,13 +575,22 @@ function renderSettings(){
   var pc=document.getElementById('planContainer');
   pc.innerHTML=Object.keys(plans).map(function(k){
     var ek=encKey(k);
-    return '<div class="plan-row" id="pr_'+ek+'">'
+    return '<div class="plan-row" id="pr_'+ek+'" data-k="'+ek+'">'
       +'<span class="plan-ic">'+(ICONS[k]||'&#128230;')+'</span>'
-      +'<div class="plan-name-wrap"><span class="plan-name" onclick="editPlanName(''+ek+'')">'+k+' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>'
-      +'<span class="plan-nom" onclick="editPlanNom(''+ek+'')">'+fmt(plans[k])+' <span class="plan-edit-ic">&#9999;&#65039;</span></span>'
+      +'<div class="plan-name-wrap">'
+      +'<span class="plan-name" data-action="editname" data-k="'+ek+'" style="cursor:pointer">'+k+' <span class="plan-edit-ic">&#9999;&#65039;</span></span>'
+      +'</div>'
+      +'<span class="plan-nom" data-action="editnom" data-k="'+ek+'" style="cursor:pointer">'+fmt(plans[k])+' <span class="plan-edit-ic">&#9999;&#65039;</span></span>'
       +'</div>';
   }).join('');
   document.getElementById('setupTotal').textContent=fmt(calcAnggaran());
+  pc.addEventListener('click', handlePlanClick);
+}
+function handlePlanClick(e){
+  var el = e.target.closest('[data-action]');
+  if(!el) return;
+  if(el.dataset.action==='editname') editPlanName(el.dataset.k);
+  if(el.dataset.action==='editnom') editPlanNom(el.dataset.k);
 }
 
 function encKey(k){return k.replace(/[^a-z0-9]/gi,'_');}
@@ -600,13 +609,16 @@ function editPlanName(slug){
     txData.forEach(function(t){if(t.kat===key)t.kat=newName;});
     var newSlug=encKey(newName);
     row.id='pr_'+newSlug;
+    row.dataset.k=newSlug;
     var newSpan=document.createElement('span');
     newSpan.className='plan-name';
+    newSpan.dataset.action='editname';
+    newSpan.dataset.k=newSlug;
+    newSpan.style.cursor='pointer';
     newSpan.innerHTML=newName+' <span class="plan-edit-ic">&#9999;&#65039;</span>';
-    newSpan.setAttribute('onclick','editPlanName(''+newSlug+'')');
     inp.replaceWith(newSpan);
     var nomSpan=row.querySelector('.plan-nom');
-    if(nomSpan) nomSpan.setAttribute('onclick','editPlanNom(''+newSlug+'')');
+    if(nomSpan){ nomSpan.dataset.action='editnom'; nomSpan.dataset.k=newSlug; }
     buildCatOptions(); saveData(); render();
     document.getElementById('setupTotal').textContent=fmt(calcAnggaran());
     showToast('Nama: '+newName);
@@ -664,16 +676,24 @@ function doExportJSON(){
 function doExportCSV(){
   var tit=document.getElementById('appTitle').textContent;
   var rows=[['Tanggal','Tipe','Kategori','Metode','Nominal','Keterangan']];
-  txData.forEach(function(t){rows.push([t.tgl,t.type==='tunai'?'Tunai':t.type==='rek'?'Rekening':'Ambil Tunai',t.kat,t.met||'',t.nom,t.note||'']);});
-  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('
-');
-  var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  txData.forEach(function(t){
+    var tipe = t.type==='tunai'?'Tunai':t.type==='rek'?'Rekening':'Ambil Tunai';
+    rows.push([t.tgl, tipe, t.kat, t.met||'', t.nom, t.note||'']);
+  });
+  var sep = ',', nl = '\n', q = '"';
+  var csv = rows.map(function(r){
+    return r.map(function(v){
+      var s = String(v).split(q).join(q+q);
+      return q+s+q;
+    }).join(sep);
+  }).join(nl);
+  var bom = '\uFEFF';
+  var blob=new Blob([bom+csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob); var a=document.createElement('a');
   var fn=tit.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_data.csv';
   a.href=url; a.download=fn; a.click(); URL.revokeObjectURL(url);
   showToast('CSV: '+fn);
 }
-
 function doImport(e){
   var file=e.target.files[0]; if(!file) return;
   var reader=new FileReader();
