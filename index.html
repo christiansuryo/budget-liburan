@@ -181,6 +181,22 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .sub-inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;font-size:11px;font-family:var(--fn);padding:2px 6px;width:150px;outline:none}
 .plan-inp{height:36px;border:1.5px solid var(--or);border-radius:8px;padding:0 8px;font-size:14px;font-family:var(--fn);text-align:right;background:var(--wh);outline:none;width:120px}
 .plan-name-inp{height:36px;border:1.5px solid var(--bl);border-radius:8px;padding:0 8px;font-size:13px;font-family:var(--fn);background:var(--wh);outline:none;flex:1}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px)}
+.confirm-box{background:var(--wh);border-radius:20px;padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.confirm-title{font-size:16px;font-weight:600;color:var(--g9);margin-bottom:8px}
+.confirm-msg{font-size:13px;color:var(--g6);line-height:1.6;margin-bottom:20px}
+.confirm-detail{background:var(--g0);border-radius:var(--rmd);padding:10px 12px;margin-bottom:20px;font-size:13px;color:var(--g9)}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btns button{flex:1;height:46px;border-radius:var(--rmd);border:none;font-size:14px;font-weight:600;font-family:var(--fn);cursor:pointer}
+.btn-cancel{background:var(--g1);color:var(--g6)}
+.btn-confirm-del{background:var(--re);color:#fff}
+.add-plan-row{display:flex;gap:8px;padding:12px 16px;border-top:2px solid var(--g1);align-items:center}
+.add-plan-inp{flex:1;height:40px;border:1.5px solid var(--g1);border-radius:var(--rmd);padding:0 12px;font-size:13px;font-family:var(--fn);color:var(--g9);background:var(--g0);outline:none}
+.add-plan-inp:focus{border-color:var(--or);background:var(--wh)}
+.add-plan-nom{width:110px;height:40px;border:1.5px solid var(--g1);border-radius:var(--rmd);padding:0 10px;font-size:13px;font-family:var(--fn);color:var(--g9);background:var(--g0);outline:none}
+.add-plan-nom:focus{border-color:var(--or);background:var(--wh)}
+.btn-add-plan{height:40px;width:40px;border-radius:var(--rmd);background:var(--or);color:#fff;border:none;font-size:20px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.btn-add-plan:active{background:var(--or-d)}
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .kpi,.prog-card,.dompet-card,.rek-card,.cat-card,.tx-card{animation:up .22s ease both}
 ::-webkit-scrollbar{display:none}
@@ -373,6 +389,17 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="confirm-overlay" id="confirmOverlay" style="display:none">
+  <div class="confirm-box">
+    <div class="confirm-title">&#128465; Hapus transaksi?</div>
+    <div class="confirm-msg">Transaksi berikut akan dihapus dari semua perangkat dan tidak bisa dikembalikan.</div>
+    <div class="confirm-detail" id="confirmDetail"></div>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">Batal</button>
+      <button class="btn-confirm-del" id="btnConfirmDel">Ya, hapus</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -431,7 +458,7 @@ onValue(ref(db, 'budget'), function(snap){
   if(data.title)  { state.title = data.title; document.getElementById('appTitle').textContent = data.title; document.title = data.title; }
   if(data.sub)    { state.sub = data.sub; document.getElementById('appSub').textContent = data.sub; }
   if(data.plans)  { state.plans = data.plans; buildCatOptions(); }
-  if(data.dompet !== undefined) state.dompet = data.dompet;
+  // dompet calculated from transactions, not stored
   // txData: Firebase object -> array
   if(data.txData){
     state.txData = Object.keys(data.txData).map(function(k){
@@ -501,7 +528,6 @@ window.doAdd = function(type){
     note = document.getElementById('noteTunai').value.trim();
     tgl  = document.getElementById('tglTunai').value || today;
     met  = 'Tunai';
-    state.dompet = Math.max(0, state.dompet - nom);
     document.getElementById('nomTunai').value  = '';
     document.getElementById('noteTunai').value = '';
   } else if(type==='rek'){
@@ -518,14 +544,12 @@ window.doAdd = function(type){
     if(!nom||nom<=0){ showToast('Masukkan jumlah yang valid'); return; }
     kat  = 'Ambil Tunai'; met = ''; note = document.getElementById('noteTarik').value.trim();
     tgl  = document.getElementById('tglTarik').value || today;
-    state.dompet += nom;
     document.getElementById('nomTarik').value  = '';
     document.getElementById('noteTarik').value = '';
     document.getElementById('tglTarik').value  = today;
   }
   var tx = { id: Date.now(), type: type, kat: kat, met: met, nom: nom, note: note, tgl: tgl };
   fbAddTx(tx);
-  fbSetMeta({ dompet: state.dompet });
   closeSheet();
   if(type==='tunai')      showToast('Dicatat - dompet -'+fmtS(nom));
   else if(type==='rek')   showToast('Pengeluaran rekening dicatat');
@@ -534,11 +558,18 @@ window.doAdd = function(type){
 
 // ── DELETE TRANSACTION ───────────────────────────────────────────────────────
 window.doDelete = function(fbKey, type, nom){
-  if(!confirm('Hapus transaksi ini?')) return;
-  if(type==='tunai')      state.dompet += nom;
-  else if(type==='tarik') state.dompet = Math.max(0, state.dompet - nom);
-  fbRemoveTx(fbKey);
-  fbSetMeta({ dompet: state.dompet });
+  var typeLabel = type==='tunai'?'Tunai':type==='rek'?'Rekening':'Ambil Tunai';
+  var detail = typeLabel+' - '+fmt(nom);
+  document.getElementById('confirmDetail').textContent = detail;
+  document.getElementById('confirmOverlay').style.display = 'flex';
+  document.getElementById('btnConfirmDel').onclick = function(){
+    fbRemoveTx(fbKey);
+    closeConfirm();
+    showToast('Transaksi dihapus');
+  };
+};
+window.closeConfirm = function(){
+  document.getElementById('confirmOverlay').style.display = 'none';
 };
 
 // ── RENDER ───────────────────────────────────────────────────────────────────
@@ -547,6 +578,7 @@ function render(){
   var totTunai  = state.txData.filter(function(t){ return t.type==='tunai'; }).reduce(function(a,t){ return a+t.nom; }, 0);
   var totRek    = state.txData.filter(function(t){ return t.type==='rek';   }).reduce(function(a,t){ return a+t.nom; }, 0);
   var totTarik  = state.txData.filter(function(t){ return t.type==='tarik'; }).reduce(function(a,t){ return a+t.nom; }, 0);
+  var dompetCalc = totTarik - totTunai;
   var total     = totTunai + totRek;
   var pct       = anggaran>0 ? Math.round(total/anggaran*100) : 0;
   var txCount   = state.txData.filter(function(t){ return t.type!=='tarik'; }).length;
@@ -554,11 +586,11 @@ function render(){
   document.getElementById('heroTotal').textContent = fmt(total);
   document.getElementById('hTunai').textContent    = fmtS(totTunai);
   document.getElementById('hRek').textContent      = fmtS(totRek);
-  document.getElementById('hDompet').textContent   = fmtS(state.dompet);
+  document.getElementById('hDompet').textContent   = fmtS(dompetCalc);
   document.getElementById('pctBadge').textContent  = pct+'%';
   document.getElementById('kpiTunai').textContent  = fmt(totTunai);
   document.getElementById('kpiRek').textContent    = fmt(totRek);
-  document.getElementById('dompetBig').textContent = fmt(state.dompet);
+  document.getElementById('dompetBig').textContent = fmt(dompetCalc);
   document.getElementById('dMasuk').textContent    = fmt(totTarik);
   document.getElementById('dKeluar').textContent   = fmt(totTunai);
   document.getElementById('rekBig').textContent    = fmt(totRek);
@@ -660,13 +692,35 @@ function renderSettings(){
       +' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>';
   }).join('');
   document.getElementById('setupTotal').textContent = fmt(calcAnggaran());
-  pc.addEventListener('click', function(e){
+  // Add new category row at bottom
+  var addRow = document.createElement('div');
+  addRow.className = 'add-plan-row';
+  addRow.innerHTML = '<input class="add-plan-inp" id="newKatName" placeholder="Nama kategori baru" maxlength="30">'
+    +'<input class="add-plan-nom" id="newKatNom" type="number" inputmode="numeric" placeholder="Rp 0">'
+    +'<button class="btn-add-plan" onclick="addKategori()" title="Tambah kategori">+</button>';
+  pc.appendChild(addRow);
+  // remove old listener to avoid stacking
+  var pcNew = pc.cloneNode(true);
+  pc.parentNode.replaceChild(pcNew, pc);
+  pcNew.addEventListener('click', function(e){
     var el = e.target.closest('[data-action]');
     if(!el) return;
     if(el.dataset.action==='editname') editPlanName(el.dataset.k);
     if(el.dataset.action==='editnom')  editPlanNom(el.dataset.k);
   });
 }
+
+window.addKategori = function(){
+  var name = (document.getElementById('newKatName').value||'').trim();
+  var nom  = parseInt(document.getElementById('newKatNom').value)||0;
+  if(!name){ showToast('Masukkan nama kategori'); return; }
+  if(state.plans[name]!==undefined){ showToast('Kategori sudah ada'); return; }
+  state.plans[name] = nom;
+  fbSetMeta({ plans: state.plans });
+  buildCatOptions();
+  renderSettings();
+  showToast('Kategori ditambahkan: '+name);
+};
 
 function encKey(k){ return k.replace(/[^a-z0-9]/gi,'_'); }
 function decKey(s){ return Object.keys(state.plans).find(function(k){ return encKey(k)===s; }); }
@@ -769,7 +823,7 @@ window.doReset = function(){
   if(!confirm('Reset semua data di Firebase? Semua HP akan terpengaruh. Lanjutkan?')) return;
   set(ref(db,'budget'), {
     title: state.title, sub: state.sub,
-    plans: Object.assign({},PLANS_DEF), dompet: 0
+    plans: Object.assign({},PLANS_DEF)
   });
   showToast('Data direset');
 };
