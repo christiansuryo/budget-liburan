@@ -181,6 +181,15 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .sub-inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;font-size:11px;font-family:var(--fn);padding:2px 6px;width:150px;outline:none}
 .plan-inp{height:36px;border:1.5px solid var(--or);border-radius:8px;padding:0 8px;font-size:14px;font-family:var(--fn);text-align:right;background:var(--wh);outline:none;width:120px}
 .plan-name-inp{height:36px;border:1.5px solid var(--bl);border-radius:8px;padding:0 8px;font-size:13px;font-family:var(--fn);background:var(--wh);outline:none;flex:1}
+.tx-item{cursor:pointer}
+.tx-item:active{background:var(--g0)}
+.edit-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:var(--wh);border-radius:20px 20px 0 0;z-index:201;padding:0 20px calc(28px + env(safe-area-inset-bottom,0));transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:92dvh;overflow-y:auto}
+.edit-sheet.open{transform:translateX(-50%) translateY(0)}
+.edit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.edit-title{font-size:17px;font-weight:600;color:var(--g9)}
+.btn-edit-del{background:var(--re-l);color:var(--re);border:none;border-radius:var(--rmd);padding:8px 14px;font-size:13px;font-weight:600;font-family:var(--fn);cursor:pointer}
+.edit-type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;margin-bottom:16px}
+.etb-tunai{background:var(--am-l);color:var(--am)}.etb-rek{background:var(--bl-l);color:var(--bl)}.etb-tarik{background:var(--gr-l);color:var(--gr)}
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(3px)}
 .confirm-box{background:var(--wh);border-radius:20px;padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .confirm-title{font-size:16px;font-weight:600;color:var(--g9);margin-bottom:8px}
@@ -401,6 +410,40 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   </div>
 </div>
 
+<div class="overlay" id="editOverlay" onclick="closeEdit()"></div>
+<div class="edit-sheet" id="editSheet">
+  <div class="sheet-handle"></div>
+  <div class="edit-header">
+    <div class="edit-title">Edit transaksi</div>
+    <button class="btn-edit-del" id="btnEditDel">&#128465; Hapus</button>
+  </div>
+  <div id="editTypeBadge"></div>
+  <div class="f-row">
+    <div class="f-field"><label class="f-lbl" id="editKatLbl">Kategori</label>
+      <select class="f-sel" id="editKat"></select>
+    </div>
+    <div class="f-field"><label class="f-lbl">Nominal (Rp)</label>
+      <input type="number" class="f-inp" id="editNom" inputmode="numeric" placeholder="0">
+    </div>
+  </div>
+  <div class="f-row">
+    <div class="f-field"><label class="f-lbl">Tanggal</label>
+      <input type="date" class="f-inp" id="editTgl">
+    </div>
+    <div class="f-field" id="editMetField">
+      <label class="f-lbl">Via</label>
+      <select class="f-sel" id="editMet">
+        <option>Transfer bank</option><option>QRIS</option><option>Kartu debit</option>
+      </select>
+    </div>
+  </div>
+  <div class="f-field">
+    <label class="f-lbl">Keterangan</label>
+    <input type="text" class="f-inp" id="editNote" placeholder="opsional">
+  </div>
+  <button class="btn-sub bs-or" id="btnSaveEdit" style="background:var(--or)">&#10003; Simpan perubahan</button>
+</div>
+
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set, push, remove, update }
@@ -572,6 +615,76 @@ window.closeConfirm = function(){
   document.getElementById('confirmOverlay').style.display = 'none';
 };
 
+// ── EDIT TRANSACTION ──────────────────────────────────────────────────────────
+var editingFbKey = null;
+
+window.openEdit = function(fbKey){
+  var tx = state.txData.find(function(t){ return t._fbKey===fbKey; });
+  if(!tx) return;
+  editingFbKey = fbKey;
+
+  // badge
+  var typeLabel = tx.type==='tunai'?'&#128181; Tunai':tx.type==='rek'?'&#127970; Rekening':'&#127975; Ambil tunai';
+  document.getElementById('editTypeBadge').innerHTML = '<span class="edit-type-badge etb-'+tx.type+'">'+typeLabel+'</span>';
+
+  // category select
+  var katEl = document.getElementById('editKat');
+  if(tx.type==='tarik'){
+    katEl.innerHTML = '<option>Ambil Tunai</option>';
+    document.getElementById('editKatLbl').textContent = 'Jenis';
+  } else {
+    var opts = Object.keys(state.plans).map(function(k){ return '<option'+(k===tx.kat?' selected':'')+'>'+k+'</option>'; }).join('');
+    katEl.innerHTML = opts;
+    document.getElementById('editKatLbl').textContent = 'Kategori';
+  }
+
+  // via field - only for rek
+  var metField = document.getElementById('editMetField');
+  if(tx.type==='rek'){
+    metField.style.display = '';
+    var metEl = document.getElementById('editMet');
+    for(var i=0;i<metEl.options.length;i++){
+      if(metEl.options[i].value===tx.met) metEl.selectedIndex=i;
+    }
+  } else {
+    metField.style.display = 'none';
+  }
+
+  document.getElementById('editNom').value  = tx.nom;
+  document.getElementById('editTgl').value  = tx.tgl;
+  document.getElementById('editNote').value = tx.note||'';
+
+  // delete button
+  document.getElementById('btnEditDel').onclick = function(){
+    closeEdit();
+    window.doDelete(fbKey, tx.type, tx.nom);
+  };
+
+  // save button
+  document.getElementById('btnSaveEdit').onclick = function(){
+    var nom = parseInt(document.getElementById('editNom').value);
+    if(!nom||nom<=0){ showToast('Masukkan nominal yang valid'); return; }
+    var kat  = document.getElementById('editKat').value;
+    var tgl  = document.getElementById('editTgl').value;
+    var note = document.getElementById('editNote').value.trim();
+    var met  = tx.type==='rek' ? document.getElementById('editMet').value : tx.met;
+    var updated = { id:tx.id, type:tx.type, kat:kat, met:met, nom:nom, note:note, tgl:tgl };
+    setSyncDot('sync');
+    set(ref(db,'budget/txData/'+fbKey), updated);
+    closeEdit();
+    showToast('Transaksi diperbarui');
+  };
+
+  document.getElementById('editOverlay').classList.add('open');
+  document.getElementById('editSheet').classList.add('open');
+};
+
+window.closeEdit = function(){
+  document.getElementById('editOverlay').classList.remove('open');
+  document.getElementById('editSheet').classList.remove('open');
+  editingFbKey = null;
+};
+
 // ── RENDER ───────────────────────────────────────────────────────────────────
 function render(){
   var anggaran  = calcAnggaran();
@@ -653,8 +766,12 @@ function render(){
   }
   txEl.onclick = function(e){
     var btn = e.target.closest('.btn-del');
-    if(!btn) return;
-    window.doDelete(btn.dataset.fk, btn.dataset.type, parseInt(btn.dataset.nom));
+    if(btn){
+      window.doDelete(btn.dataset.fk, btn.dataset.type, parseInt(btn.dataset.nom));
+      return;
+    }
+    var item = e.target.closest('.tx-item');
+    if(item && item.dataset.fk) window.openEdit(item.dataset.fk);
   };
   txEl.innerHTML = dates.map(function(d){
     var label = new Date(d+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -664,7 +781,7 @@ function render(){
       var sub   = []; if(t.note) sub.push(t.note); if(t.met&&t.met!=='') sub.push(t.met);
       var metLabel = t.type==='tunai'?'Tunai':t.type==='rek'?t.met:'Masuk dompet';
       var fk = t._fbKey || '';
-      return '<div class="tx-item">'
+      return '<div class="tx-item" data-fk="'+fk+'">'
         +'<div class="tx-dot td-'+t.type+'">'+(ICONS[t.kat]||'&#128230;')+'</div>'
         +'<div class="tx-meta"><div class="tx-kat">'+t.kat+'</div>'
         +(sub.length?'<div class="tx-sub">'+sub.join(' - ')+'</div>':'')+'</div>'
@@ -847,7 +964,26 @@ function showToast(msg){
 }
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(function(){});
+  navigator.serviceWorker.register('./sw.js').then(function(reg){
+    // Cek update setiap app dibuka
+    reg.update();
+    // Kalau ada service worker baru, langsung aktifkan tanpa tunggu
+    reg.addEventListener('updatefound', function(){
+      var newSW = reg.installing;
+      newSW.addEventListener('statechange', function(){
+        if(newSW.state==='installed' && navigator.serviceWorker.controller){
+          // Ada versi baru - reload otomatis
+          navigator.serviceWorker.controller.postMessage({type:'SKIP_WAITING'});
+        }
+      });
+    });
+  }).catch(function(){});
+
+  // Reload halaman saat service worker baru aktif
+  var refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(!refreshing){ refreshing=true; window.location.reload(); }
+  });
 }
 </script>
 </body>
