@@ -25,13 +25,15 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:100dvh;max-width:430px;margin:0 auto;overscroll-behavior:none}
 .safe{background:var(--or);height:env(safe-area-inset-top,0)}
-.appbar{background:var(--or);padding:14px 20px 18px;position:sticky;top:0;z-index:100}
+.appbar{background:var(--or);padding:14px 20px 18px;position:sticky;top:0;z-index:100;background-image:url('./icon-appbar.webp');background-size:280px 280px;background-position:right -30px top -40px;background-repeat:no-repeat;position:relative;overflow:hidden}
+.appbar::after{content:'';position:absolute;inset:0;background:rgba(216,90,48,0.82);z-index:0}
+.appbar>*{position:relative;z-index:1}
 .appbar-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .at-wrap{display:flex;flex-direction:column;gap:2px}
-.at-title-row{display:flex;align-items:center;gap:6px;cursor:pointer}
+.at-title-row{display:flex;align-items:center;gap:6px}
 .at-title{font-size:17px;font-weight:600;color:#fff;letter-spacing:-.2px}
 .at-edit{font-size:11px;opacity:.65}
-.at-sub-row{display:flex;align-items:center;gap:4px;cursor:pointer}
+.at-sub-row{display:flex;align-items:center;gap:4px}
 .at-sub{font-size:11px;color:rgba(255,255,255,.75)}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4);flex-shrink:0;transition:background .3s}
 .sync-dot.ok{background:#7CFC00}.sync-dot.sync{background:#FFD700;animation:pulse .8s infinite}
@@ -181,6 +183,19 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .sub-inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;font-size:11px;font-family:var(--fn);padding:2px 6px;width:150px;outline:none}
 .plan-inp{height:36px;border:1.5px solid var(--or);border-radius:8px;padding:0 8px;font-size:14px;font-family:var(--fn);text-align:right;background:var(--wh);outline:none;width:120px}
 .plan-name-inp{height:36px;border:1.5px solid var(--bl);border-radius:8px;padding:0 8px;font-size:13px;font-family:var(--fn);background:var(--wh);outline:none;flex:1}
+.pie-card{background:var(--wh);border-radius:var(--rmd);padding:16px;box-shadow:var(--sh);margin-bottom:12px}
+.pie-card-title{font-size:13px;font-weight:500;color:var(--g9);margin-bottom:14px}
+.pie-wrap{display:flex;align-items:center;gap:16px}
+.pie-svg{flex-shrink:0}
+.pie-legend{flex:1;display:flex;flex-direction:column;gap:7px;min-width:0}
+.pie-leg-item{display:flex;align-items:center;gap:7px}
+.pie-leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pie-leg-name{font-size:11px;color:var(--g6);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pie-leg-pct{font-size:11px;font-weight:600;color:var(--g9);font-family:var(--mo);flex-shrink:0}
+.pie-leg-amt{font-size:10px;color:var(--g4);flex-shrink:0}
+.tx-date-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0 6px}
+.tx-date-lbl{font-size:11px;font-weight:600;color:var(--g4);text-transform:uppercase;letter-spacing:.06em}
+.tx-date-total{font-size:12px;font-weight:600;font-family:var(--mo);color:var(--re)}
 .tx-item{cursor:pointer}
 .tx-item:active{background:var(--g0)}
 .edit-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:var(--wh);border-radius:20px 20px 0 0;z-index:201;padding:0 20px calc(28px + env(safe-area-inset-bottom,0));transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:92dvh;overflow-y:auto}
@@ -216,13 +231,11 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 <div class="appbar">
   <div class="appbar-row">
     <div class="at-wrap">
-      <div class="at-title-row" onclick="editTitle()">
+      <div class="at-title-row">
         <div class="at-title" id="appTitle">Budget Mudik 2026</div>
-        <span class="at-edit">&#9999;&#65039;</span>
       </div>
-      <div class="at-sub-row" onclick="editSub()">
+      <div class="at-sub-row">
         <div class="at-sub" id="appSub">Liburan Sekolah</div>
-        <span class="at-edit">&#9999;&#65039;</span>
         <span class="sync-dot" id="syncDot" title="Status sinkronisasi"></span>
       </div>
     </div>
@@ -267,6 +280,11 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
       <div class="rek-val" id="rekBig">Rp 0</div>
       <div class="rek-note">Transfer bank, QRIS, Kartu debit - tidak memengaruhi dompet</div>
     </div>
+    <div class="sec">Persentase pengeluaran</div>
+    <div class="pie-card" id="pieContainer">
+      <div class="empty" style="padding:20px 0"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>
+    </div>
+
     <div class="sec">Per kategori</div>
     <div class="leg">
       <div class="leg-i"><div class="leg-d" style="background:var(--am)"></div>Tunai</div>
@@ -444,24 +462,8 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   <button class="btn-sub bs-or" id="btnSaveEdit" style="background:var(--or)">&#10003; Simpan perubahan</button>
 </div>
 
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, set, push, remove, update }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
-var FB = {
-  apiKey: "AIzaSyD4TmIoUhFgYoOptjcRD6t3fubY7kfKgGY",
-  authDomain: "budget-mudik.firebaseapp.com",
-  databaseURL: "https://budget-mudik-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "budget-mudik",
-  storageBucket: "budget-mudik.firebasestorage.app",
-  messagingSenderId: "1054570288622",
-  appId: "1:1054570288622:web:b8557dfd1f418ea8bc6aff"
-};
-
-var app = initializeApp(FB);
-var db  = getDatabase(app);
-
+<script>
+// ── GLOBAL STATE (accessible before Firebase loads) ──────────────────────────
 var PLANS_DEF = {
   'SIM Mas Nathan':1500000,'KTP Mas':200000,'Makan Jajan':600000,
   'Oleh-oleh':1300000,'Bensin':1000000,'e-Toll':1000000,
@@ -473,67 +475,29 @@ var ICONS = {
   'SIM Mas Nathan':'&#129330;','KTP Mas':'&#129330;','Baju Natal':'&#128248;',
   'Foto keluarga':'&#128247;','Lain-lain':'&#128230;','Ambil Tunai':'&#127975;'
 };
-
 var state = {
-  title: 'Budget Mudik 2026',
-  sub: 'Liburan Sekolah',
+  title:'Budget Mudik 2026', sub:'Liburan Sekolah',
   plans: Object.assign({}, PLANS_DEF),
-  txData: [],
-  dompet: 0
+  txData: [], dompet: 0
 };
-
 var today = new Date().toISOString().split('T')[0];
-document.getElementById('tglTunai').value = today;
-document.getElementById('tglRek').value   = today;
-document.getElementById('tglTarik').value = today;
+var editingFbKey = null;
+var fbDB = null; // set after Firebase loads
+
+// ── FIREBASE WRITE STUBS (replaced after Firebase loads) ────────────────────
+var fbAddTx     = function(tx){ console.warn('Firebase not ready'); };
+var fbRemoveTx  = function(k){  console.warn('Firebase not ready'); };
+var fbSetMeta   = function(o){  console.warn('Firebase not ready'); };
+var fbSetTx     = function(k,v){ console.warn('Firebase not ready'); };
 
 function setSyncDot(s){
-  var d = document.getElementById('syncDot');
+  var d  = document.getElementById('syncDot');
   var st = document.getElementById('syncStatus');
-  d.className = 'sync-dot ' + s;
+  if(d)  d.className  = 'sync-dot '+s;
   if(st) st.textContent = s==='ok'?'Terhubung':s==='sync'?'Menyimpan...':'Offline';
 }
 
-// ── LISTEN Firebase - real-time sync ────────────────────────────────────────
-onValue(ref(db, 'budget'), function(snap){
-  var data = snap.val();
-  if(!data){ setSyncDot('ok'); return; }
-  if(data.title)  { state.title = data.title; document.getElementById('appTitle').textContent = data.title; document.title = data.title; }
-  if(data.sub)    { state.sub = data.sub; document.getElementById('appSub').textContent = data.sub; }
-  if(data.plans)  { state.plans = data.plans; buildCatOptions(); }
-  // dompet calculated from transactions, not stored
-  // txData: Firebase object -> array
-  if(data.txData){
-    state.txData = Object.keys(data.txData).map(function(k){
-      var t = data.txData[k]; t._fbKey = k; return t;
-    }).sort(function(a,b){ return b.id - a.id; });
-  } else { state.txData = []; }
-  setSyncDot('ok');
-  render();
-}, function(err){ setSyncDot('err'); });
-
-// ── WRITE helpers ────────────────────────────────────────────────────────────
-function fbSetMeta(obj){
-  setSyncDot('sync');
-  set(ref(db,'budget/title'), obj.title || state.title);
-  set(ref(db,'budget/sub'),   obj.sub   || state.sub);
-  if(obj.plans)  set(ref(db,'budget/plans'),  obj.plans);
-  if(obj.dompet !== undefined) set(ref(db,'budget/dompet'), obj.dompet);
-  setTimeout(function(){ setSyncDot('ok'); }, 1000);
-}
-
-function fbAddTx(tx){
-  setSyncDot('sync');
-  push(ref(db,'budget/txData'), tx);
-}
-
-function fbRemoveTx(fbKey){
-  setSyncDot('sync');
-  remove(ref(db,'budget/txData/'+fbKey));
-}
-
-// ── HELPERS ──────────────────────────────────────────────────────────────────
-function fmt(n){ return 'Rp '+Math.round(n).toLocaleString('id-ID'); }
+function fmt(n) { return 'Rp '+Math.round(n).toLocaleString('id-ID'); }
 function fmtS(n){ if(n>=1000000) return 'Rp '+(n/1000000).toFixed(1).replace(/\.0$/,'')+'jt'; if(n>=1000) return 'Rp '+Math.round(n/1000)+'rb'; return 'Rp '+n; }
 function calcAnggaran(){ return Object.values(state.plans).reduce(function(a,b){return a+b;},0); }
 
@@ -542,208 +506,201 @@ function buildCatOptions(){
   document.getElementById('katTunai').innerHTML = opts;
   document.getElementById('katRek').innerHTML   = opts;
 }
-buildCatOptions();
 
-// ── NAVIGATION ───────────────────────────────────────────────────────────────
-window.goPage = function(p){
+function goPage(p){
   document.querySelectorAll('.page').forEach(function(e){ e.classList.remove('active'); });
   document.querySelectorAll('.nb').forEach(function(e){ e.classList.remove('active'); });
   document.getElementById('page-'+p).classList.add('active');
   document.getElementById('nav-'+p).classList.add('active');
   if(p==='settings') renderSettings();
-};
-window.openSheet  = function(){ document.getElementById('overlay').classList.add('open'); document.getElementById('sheet').classList.add('open'); };
-window.closeSheet = function(){ document.getElementById('overlay').classList.remove('open'); document.getElementById('sheet').classList.remove('open'); };
-window.setTab = function(t){
+}
+function openSheet(){ document.getElementById('overlay').classList.add('open'); document.getElementById('sheet').classList.add('open'); }
+function closeSheet(){ document.getElementById('overlay').classList.remove('open'); document.getElementById('sheet').classList.remove('open'); }
+function setTab(t){
   ['tunai','rek','tarik'].forEach(function(x){
-    document.getElementById('tab-'+x).classList.toggle('active', x===t);
-    document.getElementById('f'+x.charAt(0).toUpperCase()+x.slice(1)).style.display = x===t?'block':'none';
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('f'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===t?'block':'none';
   });
-};
+}
+function closeConfirm(){ document.getElementById('confirmOverlay').style.display='none'; }
+function closeEdit(){ document.getElementById('editOverlay').classList.remove('open'); document.getElementById('editSheet').classList.remove('open'); editingFbKey=null; }
+function addKategori(){
+  var name=(document.getElementById('newKatName').value||'').trim();
+  var nom=parseInt(document.getElementById('newKatNom').value)||0;
+  if(!name){ showToast('Masukkan nama kategori'); return; }
+  if(state.plans[name]!==undefined){ showToast('Kategori sudah ada'); return; }
+  state.plans[name]=nom;
+  fbSetMeta({plans:state.plans});
+  buildCatOptions(); renderSettings(); showToast('Kategori ditambahkan: '+name);
+}
+function doInstall(){ if(window._deferredPrompt){ window._deferredPrompt.prompt(); window._deferredPrompt.userChoice.then(function(){ window._deferredPrompt=null; }); } }
 
-// ── ADD TRANSACTION ──────────────────────────────────────────────────────────
-window.doAdd = function(type){
-  var nom, kat, met, note, tgl;
+function doAdd(type){
+  var nom,kat,met,note,tgl;
   if(type==='tunai'){
-    nom  = parseInt(document.getElementById('nomTunai').value);
+    nom=parseInt(document.getElementById('nomTunai').value);
     if(!nom||nom<=0){ showToast('Masukkan nominal yang valid'); return; }
-    kat  = document.getElementById('katTunai').value;
-    note = document.getElementById('noteTunai').value.trim();
-    tgl  = document.getElementById('tglTunai').value || today;
-    met  = 'Tunai';
-    document.getElementById('nomTunai').value  = '';
-    document.getElementById('noteTunai').value = '';
+    kat=document.getElementById('katTunai').value; met='Tunai';
+    note=document.getElementById('noteTunai').value.trim();
+    tgl=document.getElementById('tglTunai').value||today;
+    document.getElementById('nomTunai').value=''; document.getElementById('noteTunai').value='';
   } else if(type==='rek'){
-    nom  = parseInt(document.getElementById('nomRek').value);
+    nom=parseInt(document.getElementById('nomRek').value);
     if(!nom||nom<=0){ showToast('Masukkan nominal yang valid'); return; }
-    kat  = document.getElementById('katRek').value;
-    met  = document.getElementById('metRek').value;
-    note = document.getElementById('noteRek').value.trim();
-    tgl  = document.getElementById('tglRek').value || today;
-    document.getElementById('nomRek').value  = '';
-    document.getElementById('noteRek').value = '';
+    kat=document.getElementById('katRek').value; met=document.getElementById('metRek').value;
+    note=document.getElementById('noteRek').value.trim();
+    tgl=document.getElementById('tglRek').value||today;
+    document.getElementById('nomRek').value=''; document.getElementById('noteRek').value='';
   } else {
-    nom  = parseInt(document.getElementById('nomTarik').value);
+    nom=parseInt(document.getElementById('nomTarik').value);
     if(!nom||nom<=0){ showToast('Masukkan jumlah yang valid'); return; }
-    kat  = 'Ambil Tunai'; met = ''; note = document.getElementById('noteTarik').value.trim();
-    tgl  = document.getElementById('tglTarik').value || today;
-    document.getElementById('nomTarik').value  = '';
-    document.getElementById('noteTarik').value = '';
-    document.getElementById('tglTarik').value  = today;
+    kat='Ambil Tunai'; met=''; note=document.getElementById('noteTarik').value.trim();
+    tgl=document.getElementById('tglTarik').value||today;
+    document.getElementById('nomTarik').value=''; document.getElementById('noteTarik').value='';
+    document.getElementById('tglTarik').value=today;
   }
-  var tx = { id: Date.now(), type: type, kat: kat, met: met, nom: nom, note: note, tgl: tgl };
-  fbAddTx(tx);
-  closeSheet();
-  if(type==='tunai')      showToast('Dicatat - dompet -'+fmtS(nom));
-  else if(type==='rek')   showToast('Pengeluaran rekening dicatat');
-  else                    showToast('Dompet +'+fmtS(nom));
-};
+  var tx={id:Date.now(),type:type,kat:kat,met:met,nom:nom,note:note,tgl:tgl};
+  fbAddTx(tx); closeSheet();
+  if(type==='tunai')    showToast('Dicatat - dompet -'+fmtS(nom));
+  else if(type==='rek') showToast('Pengeluaran rekening dicatat');
+  else                  showToast('Dompet +'+fmtS(nom));
+}
 
-// ── DELETE TRANSACTION ───────────────────────────────────────────────────────
-window.doDelete = function(fbKey, type, nom){
-  var typeLabel = type==='tunai'?'Tunai':type==='rek'?'Rekening':'Ambil Tunai';
-  var detail = typeLabel+' - '+fmt(nom);
-  document.getElementById('confirmDetail').textContent = detail;
-  document.getElementById('confirmOverlay').style.display = 'flex';
-  document.getElementById('btnConfirmDel').onclick = function(){
-    fbRemoveTx(fbKey);
-    closeConfirm();
-    showToast('Transaksi dihapus');
+function doDelete(fbKey,type,nom){
+  var typeLabel=type==='tunai'?'Tunai':type==='rek'?'Rekening':'Ambil Tunai';
+  document.getElementById('confirmDetail').textContent=typeLabel+' - '+fmt(nom);
+  document.getElementById('confirmOverlay').style.display='flex';
+  document.getElementById('btnConfirmDel').onclick=function(){
+    fbRemoveTx(fbKey); closeConfirm(); showToast('Transaksi dihapus');
   };
-};
-window.closeConfirm = function(){
-  document.getElementById('confirmOverlay').style.display = 'none';
-};
+}
 
-// ── EDIT TRANSACTION ──────────────────────────────────────────────────────────
-var editingFbKey = null;
-
-window.openEdit = function(fbKey){
-  var tx = state.txData.find(function(t){ return t._fbKey===fbKey; });
+function openEdit(fbKey){
+  var tx=state.txData.find(function(t){ return t._fbKey===fbKey; });
   if(!tx) return;
-  editingFbKey = fbKey;
-
-  // badge
-  var typeLabel = tx.type==='tunai'?'&#128181; Tunai':tx.type==='rek'?'&#127970; Rekening':'&#127975; Ambil tunai';
-  document.getElementById('editTypeBadge').innerHTML = '<span class="edit-type-badge etb-'+tx.type+'">'+typeLabel+'</span>';
-
-  // category select
-  var katEl = document.getElementById('editKat');
+  editingFbKey=fbKey;
+  var typeLabel=tx.type==='tunai'?'&#128181; Tunai':tx.type==='rek'?'&#127970; Rekening':'&#127975; Ambil tunai';
+  document.getElementById('editTypeBadge').innerHTML='<span class="edit-type-badge etb-'+tx.type+'">'+typeLabel+'</span>';
+  var katEl=document.getElementById('editKat');
   if(tx.type==='tarik'){
-    katEl.innerHTML = '<option>Ambil Tunai</option>';
-    document.getElementById('editKatLbl').textContent = 'Jenis';
+    katEl.innerHTML='<option>Ambil Tunai</option>';
+    document.getElementById('editKatLbl').textContent='Jenis';
   } else {
-    var opts = Object.keys(state.plans).map(function(k){ return '<option'+(k===tx.kat?' selected':'')+'>'+k+'</option>'; }).join('');
-    katEl.innerHTML = opts;
-    document.getElementById('editKatLbl').textContent = 'Kategori';
+    katEl.innerHTML=Object.keys(state.plans).map(function(k){ return '<option'+(k===tx.kat?' selected':'')+'>'+k+'</option>'; }).join('');
+    document.getElementById('editKatLbl').textContent='Kategori';
   }
-
-  // via field - only for rek
-  var metField = document.getElementById('editMetField');
+  var metField=document.getElementById('editMetField');
   if(tx.type==='rek'){
-    metField.style.display = '';
-    var metEl = document.getElementById('editMet');
-    for(var i=0;i<metEl.options.length;i++){
-      if(metEl.options[i].value===tx.met) metEl.selectedIndex=i;
-    }
-  } else {
-    metField.style.display = 'none';
-  }
-
-  document.getElementById('editNom').value  = tx.nom;
-  document.getElementById('editTgl').value  = tx.tgl;
-  document.getElementById('editNote').value = tx.note||'';
-
-  // delete button
-  document.getElementById('btnEditDel').onclick = function(){
-    closeEdit();
-    window.doDelete(fbKey, tx.type, tx.nom);
-  };
-
-  // save button
-  document.getElementById('btnSaveEdit').onclick = function(){
-    var nom = parseInt(document.getElementById('editNom').value);
+    metField.style.display='';
+    var metEl=document.getElementById('editMet');
+    for(var i=0;i<metEl.options.length;i++){ if(metEl.options[i].value===tx.met) metEl.selectedIndex=i; }
+  } else { metField.style.display='none'; }
+  document.getElementById('editNom').value=tx.nom;
+  document.getElementById('editTgl').value=tx.tgl;
+  document.getElementById('editNote').value=tx.note||'';
+  document.getElementById('btnEditDel').onclick=function(){ closeEdit(); doDelete(fbKey,tx.type,tx.nom); };
+  document.getElementById('btnSaveEdit').onclick=function(){
+    var nom=parseInt(document.getElementById('editNom').value);
     if(!nom||nom<=0){ showToast('Masukkan nominal yang valid'); return; }
-    var kat  = document.getElementById('editKat').value;
-    var tgl  = document.getElementById('editTgl').value;
-    var note = document.getElementById('editNote').value.trim();
-    var met  = tx.type==='rek' ? document.getElementById('editMet').value : tx.met;
-    var updated = { id:tx.id, type:tx.type, kat:kat, met:met, nom:nom, note:note, tgl:tgl };
-    setSyncDot('sync');
-    set(ref(db,'budget/txData/'+fbKey), updated);
-    closeEdit();
-    showToast('Transaksi diperbarui');
+    var updated={id:tx.id,type:tx.type,kat:document.getElementById('editKat').value,
+      met:tx.type==='rek'?document.getElementById('editMet').value:tx.met,
+      nom:nom,note:document.getElementById('editNote').value.trim(),
+      tgl:document.getElementById('editTgl').value};
+    fbSetTx(fbKey,updated); closeEdit(); showToast('Transaksi diperbarui');
   };
-
   document.getElementById('editOverlay').classList.add('open');
   document.getElementById('editSheet').classList.add('open');
-};
+}
 
-window.closeEdit = function(){
-  document.getElementById('editOverlay').classList.remove('open');
-  document.getElementById('editSheet').classList.remove('open');
-  editingFbKey = null;
-};
+function doExportJSON(){
+  var blob=new Blob([JSON.stringify({title:state.title,sub:state.sub,plans:state.plans,txData:state.txData,dompet:state.dompet},null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a');
+  a.href=url; a.download=state.title.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_backup.json';
+  a.click(); URL.revokeObjectURL(url); showToast('Backup disimpan');
+}
+function doExportCSV(){
+  var rows=[['Tanggal','Tipe','Kategori','Metode','Nominal','Keterangan']];
+  state.txData.forEach(function(t){
+    var tipe=t.type==='tunai'?'Tunai':t.type==='rek'?'Rekening':'Ambil Tunai';
+    rows.push([t.tgl,tipe,t.kat,t.met||'',t.nom,t.note||'']);
+  });
+  var nl=String.fromCharCode(10),q='"',sep=',';
+  var csv=rows.map(function(r){ return r.map(function(v){ return q+String(v).split(q).join(q+q)+q; }).join(sep); }).join(nl);
+  var blob=new Blob([String.fromCharCode(65279)+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a');
+  a.href=url; a.download=state.title.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_data.csv';
+  a.click(); URL.revokeObjectURL(url); showToast('CSV disimpan');
+}
+function doReset(){
+  if(!confirm('Reset semua data di Firebase? Semua HP akan terpengaruh.')) return;
+  fbSetMeta({title:state.title,sub:state.sub,plans:Object.assign({},PLANS_DEF),dompet:0,txData:null});
+  showToast('Data direset');
+}
 
-// ── RENDER ───────────────────────────────────────────────────────────────────
+function showToast(msg){
+  var e=document.getElementById('toast');
+  e.textContent=msg; e.classList.add('show');
+  setTimeout(function(){ e.classList.remove('show'); },3000);
+}
+
+function encKey(k){ return k.replace(/[^a-z0-9]/gi,'_'); }
+function decKey(s){ return Object.keys(state.plans).find(function(k){ return encKey(k)===s; }); }
+
 function render(){
-  var anggaran  = calcAnggaran();
-  var totTunai  = state.txData.filter(function(t){ return t.type==='tunai'; }).reduce(function(a,t){ return a+t.nom; }, 0);
-  var totRek    = state.txData.filter(function(t){ return t.type==='rek';   }).reduce(function(a,t){ return a+t.nom; }, 0);
-  var totTarik  = state.txData.filter(function(t){ return t.type==='tarik'; }).reduce(function(a,t){ return a+t.nom; }, 0);
-  var dompetCalc = totTarik - totTunai;
-  var total     = totTunai + totRek;
-  var pct       = anggaran>0 ? Math.round(total/anggaran*100) : 0;
-  var txCount   = state.txData.filter(function(t){ return t.type!=='tarik'; }).length;
-
-  document.getElementById('heroTotal').textContent = fmt(total);
-  document.getElementById('hTunai').textContent    = fmtS(totTunai);
-  document.getElementById('hRek').textContent      = fmtS(totRek);
-  document.getElementById('hDompet').textContent   = fmtS(dompetCalc);
-  document.getElementById('pctBadge').textContent  = pct+'%';
-  document.getElementById('kpiTunai').textContent  = fmt(totTunai);
-  document.getElementById('kpiRek').textContent    = fmt(totRek);
-  document.getElementById('dompetBig').textContent = fmt(dompetCalc);
-  document.getElementById('dMasuk').textContent    = fmt(totTarik);
-  document.getElementById('dKeluar').textContent   = fmt(totTunai);
-  document.getElementById('rekBig').textContent    = fmt(totRek);
-
-  var pp   = document.getElementById('progPct');
-  var pcls = pct>=100?'pp-r':pct>=80?'pp-a':'pp-g';
-  pp.textContent = pct+'%'; pp.className = 'prog-pct '+pcls;
-  var pf = document.getElementById('progFill');
-  pf.style.width = Math.min(pct,100)+'%';
-  pf.className   = 'prog-fill'+(pct>=100?' pf-r':pct>=80?' pf-a':'');
-  document.getElementById('progSub').textContent  = 'dari '+fmt(anggaran);
-  document.getElementById('progSisa').textContent = 'Sisa '+fmt(Math.max(0,anggaran-total));
-  document.getElementById('progTx').textContent   = txCount+' transaksi';
-
-  // Category bars
-  var katTunai={}, katRek={};
+  var anggaran=calcAnggaran();
+  var totTunai=state.txData.filter(function(t){ return t.type==='tunai'; }).reduce(function(a,t){ return a+t.nom; },0);
+  var totRek=state.txData.filter(function(t){ return t.type==='rek'; }).reduce(function(a,t){ return a+t.nom; },0);
+  var totTarik=state.txData.filter(function(t){ return t.type==='tarik'; }).reduce(function(a,t){ return a+t.nom; },0);
+  var dompetCalc=totTarik-totTunai;
+  var total=totTunai+totRek;
+  var pct=anggaran>0?Math.round(total/anggaran*100):0;
+  var txCount=state.txData.filter(function(t){ return t.type!=='tarik'; }).length;
+  document.getElementById('heroTotal').textContent=fmt(total);
+  document.getElementById('hTunai').textContent=fmtS(totTunai);
+  document.getElementById('hRek').textContent=fmtS(totRek);
+  document.getElementById('hDompet').textContent=fmtS(dompetCalc);
+  document.getElementById('pctBadge').textContent=pct+'%';
+  document.getElementById('kpiTunai').textContent=fmt(totTunai);
+  document.getElementById('kpiRek').textContent=fmt(totRek);
+  document.getElementById('dompetBig').textContent=fmt(dompetCalc);
+  document.getElementById('dMasuk').textContent=fmt(totTarik);
+  document.getElementById('dKeluar').textContent=fmt(totTunai);
+  document.getElementById('rekBig').textContent=fmt(totRek);
+  var pp=document.getElementById('progPct');
+  var pcls=pct>=100?'pp-r':pct>=80?'pp-a':'pp-g';
+  pp.textContent=pct+'%'; pp.className='prog-pct '+pcls;
+  var pf=document.getElementById('progFill');
+  pf.style.width=Math.min(pct,100)+'%';
+  pf.className='prog-fill'+(pct>=100?' pf-r':pct>=80?' pf-a':'');
+  document.getElementById('progSub').textContent='dari '+fmt(anggaran);
+  document.getElementById('progSisa').textContent='Sisa '+fmt(Math.max(0,anggaran-total));
+  document.getElementById('progTx').textContent=txCount+' transaksi';
+  var katTunai={},katRek={};
   state.txData.filter(function(t){ return t.type==='tunai'; }).forEach(function(t){ katTunai[t.kat]=(katTunai[t.kat]||0)+t.nom; });
-  state.txData.filter(function(t){ return t.type==='rek';   }).forEach(function(t){ katRek[t.kat]=(katRek[t.kat]||0)+t.nom; });
-  var allKats = Object.keys(katTunai).concat(Object.keys(katRek)).filter(function(v,i,a){ return a.indexOf(v)===i; });
-  var katTot  = {};
+  state.txData.filter(function(t){ return t.type==='rek'; }).forEach(function(t){ katRek[t.kat]=(katRek[t.kat]||0)+t.nom; });
+  var allKats=Object.keys(katTunai).concat(Object.keys(katRek)).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  var katTot={};
   allKats.forEach(function(k){ katTot[k]=(katTunai[k]||0)+(katRek[k]||0); });
-  var sorted = Object.keys(katTot).sort(function(a,b){ return katTot[b]-katTot[a]; });
-  var catEl = document.getElementById('catContainer');
+  var sorted=Object.keys(katTot).sort(function(a,b){ return katTot[b]-katTot[a]; });
+  var catEl=document.getElementById('catContainer');
+  var pieEl=document.getElementById('pieContainer');
   if(!sorted.length){
-    catEl.innerHTML = '<div class="empty"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
+    catEl.innerHTML='<div class="empty"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
+    pieEl.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
   } else {
-    catEl.innerHTML = sorted.map(function(k){
-      var v=katTot[k], tun=katTunai[k]||0, rek=katRek[k]||0;
-      var plan=state.plans[k]||0, hasPlan=plan>0;
-      var pctItem = hasPlan ? Math.round(v/plan*100) : 0;
-      var isOver  = hasPlan && v>plan;
-      var sc      = !hasPlan?'np':isOver?'over':'ok';
-      var barW    = hasPlan ? Math.min(Math.round(v/plan*100),100) : 100;
-      var icBg    = (rek>0&&tun===0)?'var(--bl-l)':'var(--am-l)';
-      var srcTxt  = (tun>0&&rek>0)?'tunai + rekening':(tun>0?'tunai':'rekening');
-      var srcCol  = (tun>0&&rek===0)?'var(--am)':(rek>0&&tun===0?'var(--bl)':'var(--g4)');
-      var pillTxt = !hasPlan?'no plan':pctItem+'%';
-      var overTxt = isOver?' | OVER +'+fmt(v-plan):'';
-      return '<div class="cat-row">'
-        +'<div class="cat-row-top">'
+    catEl.innerHTML=sorted.map(function(k){
+      var v=katTot[k],tun=katTunai[k]||0,rek=katRek[k]||0;
+      var plan=state.plans[k]||0,hasPlan=plan>0;
+      var pctItem=hasPlan?Math.round(v/plan*100):0;
+      var isOver=hasPlan&&v>plan;
+      var sc=!hasPlan?'np':isOver?'over':'ok';
+      var barW=hasPlan?Math.min(Math.round(v/plan*100),100):100;
+      var icBg=(rek>0&&tun===0)?'var(--bl-l)':'var(--am-l)';
+      var srcTxt=(tun>0&&rek>0)?'tunai + rekening':(tun>0?'tunai':'rekening');
+      var srcCol=(tun>0&&rek===0)?'var(--am)':(rek>0&&tun===0?'var(--bl)':'var(--g4)');
+      var pillTxt=!hasPlan?'no plan':pctItem+'%';
+      var overTxt=isOver?' | OVER +'+fmt(v-plan):'';
+      return '<div class="cat-row"><div class="cat-row-top">'
         +'<div class="cat-ic" style="background:'+icBg+'">'+(ICONS[k]||'&#128230;')+'</div>'
         +'<div class="cat-info"><div class="cat-name">'+k+'</div>'
         +'<div class="cat-src" style="color:'+srcCol+'">'+srcTxt+overTxt+'</div></div>'
@@ -753,34 +710,60 @@ function render(){
         +'<div class="cat-bf cbf-'+sc+'" style="width:'+barW+'%"></div></div>'
         +'<div class="cat-plan-lbl">'+(hasPlan?'plan '+fmt(plan):'')+'</div></div></div>';
     }).join('');
+    var PIE_COLORS=['#D85A30','#185FA5','#854F0B','#3B6D11','#7B3FA0','#A32D2D','#0D7A6B','#C67C1A','#4A6FA5','#8B5E3C'];
+    var pieTotal=sorted.reduce(function(a,k){ return a+katTot[k]; },0);
+    var cx=80,cy=80,r=68,startAngle=-Math.PI/2;
+    var slices=sorted.map(function(k,i){
+      var pctVal=pieTotal>0?katTot[k]/pieTotal:0;
+      var angle=pctVal*2*Math.PI;
+      var s={k:k,v:katTot[k],pct:Math.round(pctVal*100),color:PIE_COLORS[i%PIE_COLORS.length],start:startAngle,angle:angle};
+      startAngle+=angle; return s;
+    });
+    var paths=slices.map(function(s){
+      if(s.angle<0.01) return '';
+      var endAngle=s.start+s.angle;
+      var gapA=2/r,gs=s.start+gapA/2,ge=endAngle-gapA/2;
+      var gx1=cx+r*Math.cos(gs),gy1=cy+r*Math.sin(gs);
+      var gx2=cx+r*Math.cos(ge),gy2=cy+r*Math.sin(ge);
+      var large=s.angle>Math.PI?1:0;
+      return '<path d="M '+cx+' '+cy+' L '+gx1+' '+gy1+' A '+r+' '+r+' 0 '+large+' 1 '+gx2+' '+gy2+' Z" fill="'+s.color+'"/>';
+    }).join('');
+    var svgStr='<svg class="pie-svg" width="160" height="160" viewBox="0 0 160 160">'
+      +paths+'<circle cx="80" cy="80" r="40" fill="white"/>'
+      +'<text x="80" y="76" text-anchor="middle" font-size="11" fill="#6B6966" font-family="DM Sans,sans-serif">Total</text>'
+      +'<text x="80" y="92" text-anchor="middle" font-size="12" font-weight="600" fill="#1E1D1B" font-family="DM Mono,monospace">'+fmtS(pieTotal)+'</text>'
+      +'</svg>';
+    var legendStr=slices.slice(0,6).map(function(s){
+      return '<div class="pie-leg-item"><div class="pie-leg-dot" style="background:'+s.color+'"></div>'
+        +'<div class="pie-leg-name">'+s.k+'</div><div class="pie-leg-pct">'+s.pct+'%</div></div>';
+    }).join('');
+    if(slices.length>6){ var op=slices.slice(6).reduce(function(a,s){ return a+s.pct; },0); legendStr+='<div class="pie-leg-item"><div class="pie-leg-dot" style="background:#CCC"></div><div class="pie-leg-name">Lainnya</div><div class="pie-leg-pct">'+op+'%</div></div>'; }
+    pieEl.innerHTML='<div class="pie-card-title">Komposisi pengeluaran per kategori</div><div class="pie-wrap">'+svgStr+'<div class="pie-legend">'+legendStr+'</div></div>';
   }
-
-  // Transaction list
-  var groups = {};
+  var groups={};
   state.txData.forEach(function(t){ if(!groups[t.tgl]) groups[t.tgl]=[]; groups[t.tgl].push(t); });
-  var txEl  = document.getElementById('txContainer');
-  var dates = Object.keys(groups).sort(function(a,b){ return b>a?1:-1; });
+  var txEl=document.getElementById('txContainer');
+  var dates=Object.keys(groups).sort(function(a,b){ return b>a?1:-1; });
   if(!dates.length){
-    txEl.innerHTML = '<div class="empty"><div class="empty-ic">&#128203;</div><div>Belum ada transaksi<br>Tekan + untuk mencatat</div></div>';
+    txEl.innerHTML='<div class="empty"><div class="empty-ic">&#128203;</div><div>Belum ada transaksi<br>Tekan + untuk mencatat</div></div>';
     return;
   }
-  txEl.onclick = function(e){
-    var btn = e.target.closest('.btn-del');
-    if(btn){
-      window.doDelete(btn.dataset.fk, btn.dataset.type, parseInt(btn.dataset.nom));
-      return;
-    }
-    var item = e.target.closest('.tx-item');
-    if(item && item.dataset.fk) window.openEdit(item.dataset.fk);
+  txEl.onclick=function(e){
+    var btn=e.target.closest('.btn-del');
+    if(btn){ doDelete(btn.dataset.fk,btn.dataset.type,parseInt(btn.dataset.nom)); return; }
+    var item=e.target.closest('.tx-item');
+    if(item&&item.dataset.fk) openEdit(item.dataset.fk);
   };
-  txEl.innerHTML = dates.map(function(d){
-    var label = new Date(d+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    var items = groups[d].map(function(t){
-      var isOut = t.type==='tunai'||t.type==='rek';
-      var sign  = isOut?'-':'+';
-      var sub   = []; if(t.note) sub.push(t.note); if(t.met&&t.met!=='') sub.push(t.met);
-      var metLabel = t.type==='tunai'?'Tunai':t.type==='rek'?t.met:'Masuk dompet';
-      var fk = t._fbKey || '';
+  txEl.innerHTML=dates.map(function(d){
+    var label=new Date(d+'T00:00:00').toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    var dailyOut=groups[d].filter(function(t){ return t.type==='tunai'||t.type==='rek'; }).reduce(function(a,t){ return a+t.nom; },0);
+    var dailyStr=dailyOut>0?'-'+fmt(dailyOut):'';
+    var items=groups[d].map(function(t){
+      var isOut=t.type==='tunai'||t.type==='rek';
+      var sign=isOut?'-':'+';
+      var sub=[]; if(t.note) sub.push(t.note); if(t.met&&t.met!=='') sub.push(t.met);
+      var metLabel=t.type==='tunai'?'Tunai':t.type==='rek'?t.met:'Masuk dompet';
+      var fk=t._fbKey||'';
       return '<div class="tx-item" data-fk="'+fk+'">'
         +'<div class="tx-dot td-'+t.type+'">'+(ICONS[t.kat]||'&#128230;')+'</div>'
         +'<div class="tx-meta"><div class="tx-kat">'+t.kat+'</div>'
@@ -790,200 +773,152 @@ function render(){
         +'<button class="btn-del" data-fk="'+fk+'" data-type="'+t.type+'" data-nom="'+t.nom+'">&#10005;</button>'
         +'</div>';
     }).join('');
-    return '<div class="tx-date">'+label+'</div><div class="tx-card">'+items+'</div>';
+    return '<div class="tx-date-row"><div class="tx-date-lbl">'+label+'</div>'+(dailyStr?'<div class="tx-date-total">'+dailyStr+'</div>':'')+'</div><div class="tx-card">'+items+'</div>';
   }).join('');
 }
 
-// ── SETTINGS ─────────────────────────────────────────────────────────────────
 function renderSettings(){
-  document.getElementById('aboutTitle').textContent = state.title;
-  var pc = document.getElementById('planContainer');
-  pc.innerHTML = Object.keys(state.plans).map(function(k){
-    var ek = encKey(k);
+  document.getElementById('aboutTitle').textContent=state.title;
+  var pc=document.getElementById('planContainer');
+  pc.innerHTML=Object.keys(state.plans).map(function(k){
+    var ek=encKey(k);
     return '<div class="plan-row" id="pr_'+ek+'">'
       +'<span class="plan-ic">'+(ICONS[k]||'&#128230;')+'</span>'
-      +'<div class="plan-name-wrap">'
-      +'<span class="plan-name" data-action="editname" data-k="'+ek+'" style="cursor:pointer">'+k
+      +'<div class="plan-name-wrap"><span class="plan-name" data-action="editname" data-k="'+ek+'" style="cursor:pointer">'+k
       +' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>'
       +'<span class="plan-nom" data-action="editnom" data-k="'+ek+'" style="cursor:pointer">'+fmt(state.plans[k])
       +' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>';
   }).join('');
-  document.getElementById('setupTotal').textContent = fmt(calcAnggaran());
-  // Add new category row at bottom
-  var addRow = document.createElement('div');
-  addRow.className = 'add-plan-row';
-  addRow.innerHTML = '<input class="add-plan-inp" id="newKatName" placeholder="Nama kategori baru" maxlength="30">'
+  document.getElementById('setupTotal').textContent=fmt(calcAnggaran());
+  var addRow=document.createElement('div'); addRow.className='add-plan-row';
+  addRow.innerHTML='<input class="add-plan-inp" id="newKatName" placeholder="Nama kategori baru" maxlength="30">'
     +'<input class="add-plan-nom" id="newKatNom" type="number" inputmode="numeric" placeholder="Rp 0">'
     +'<button class="btn-add-plan" onclick="addKategori()" title="Tambah kategori">+</button>';
   pc.appendChild(addRow);
-  // remove old listener to avoid stacking
-  var pcNew = pc.cloneNode(true);
-  pc.parentNode.replaceChild(pcNew, pc);
-  pcNew.addEventListener('click', function(e){
-    var el = e.target.closest('[data-action]');
-    if(!el) return;
+  var pcNew=pc.cloneNode(true); pc.parentNode.replaceChild(pcNew,pc);
+  pcNew.addEventListener('click',function(e){
+    var el=e.target.closest('[data-action]'); if(!el) return;
     if(el.dataset.action==='editname') editPlanName(el.dataset.k);
     if(el.dataset.action==='editnom')  editPlanNom(el.dataset.k);
   });
 }
 
-window.addKategori = function(){
-  var name = (document.getElementById('newKatName').value||'').trim();
-  var nom  = parseInt(document.getElementById('newKatNom').value)||0;
-  if(!name){ showToast('Masukkan nama kategori'); return; }
-  if(state.plans[name]!==undefined){ showToast('Kategori sudah ada'); return; }
-  state.plans[name] = nom;
-  fbSetMeta({ plans: state.plans });
-  buildCatOptions();
-  renderSettings();
-  showToast('Kategori ditambahkan: '+name);
-};
-
-function encKey(k){ return k.replace(/[^a-z0-9]/gi,'_'); }
-function decKey(s){ return Object.keys(state.plans).find(function(k){ return encKey(k)===s; }); }
-
 function editPlanName(slug){
-  var key = decKey(slug); if(!key) return;
-  var row = document.getElementById('pr_'+slug);
-  var nameSpan = row.querySelector('.plan-name');
-  var inp = document.createElement('input');
-  inp.className='plan-name-inp'; inp.value=key; inp.maxLength=30;
+  var key=decKey(slug); if(!key) return;
+  var row=document.getElementById('pr_'+slug);
+  var nameSpan=row.querySelector('.plan-name');
+  var inp=document.createElement('input'); inp.className='plan-name-inp'; inp.value=key; inp.maxLength=30;
   nameSpan.replaceWith(inp); inp.focus(); inp.select();
   function commit(){
-    var newName = inp.value.trim()||key;
-    var val = state.plans[key]; delete state.plans[key]; state.plans[newName]=val;
+    var newName=inp.value.trim()||key;
+    var val=state.plans[key]; delete state.plans[key]; state.plans[newName]=val;
     state.txData.forEach(function(t){ if(t.kat===key) t.kat=newName; });
-    var newSlug = encKey(newName);
-    row.id = 'pr_'+newSlug;
-    var newSpan = document.createElement('span');
-    newSpan.className='plan-name'; newSpan.dataset.action='editname'; newSpan.dataset.k=newSlug; newSpan.style.cursor='pointer';
-    newSpan.innerHTML = newName+' <span class="plan-edit-ic">&#9999;&#65039;</span>';
+    var newSlug=encKey(newName); row.id='pr_'+newSlug;
+    var newSpan=document.createElement('span'); newSpan.className='plan-name';
+    newSpan.dataset.action='editname'; newSpan.dataset.k=newSlug; newSpan.style.cursor='pointer';
+    newSpan.innerHTML=newName+' <span class="plan-edit-ic">&#9999;&#65039;</span>';
     inp.replaceWith(newSpan);
-    var nomSpan = row.querySelector('.plan-nom');
+    var nomSpan=row.querySelector('.plan-nom');
     if(nomSpan){ nomSpan.dataset.action='editnom'; nomSpan.dataset.k=newSlug; }
-    fbSetMeta({ plans: state.plans });
-    buildCatOptions(); render();
-    document.getElementById('setupTotal').textContent = fmt(calcAnggaran());
+    fbSetMeta({plans:state.plans}); buildCatOptions(); render();
+    document.getElementById('setupTotal').textContent=fmt(calcAnggaran());
     showToast('Nama: '+newName);
   }
-  inp.addEventListener('blur', commit);
-  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') inp.replaceWith(nameSpan); });
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') inp.replaceWith(nameSpan); });
 }
 
 function editPlanNom(slug){
-  var key = decKey(slug); if(!key) return;
-  var row = document.getElementById('pr_'+slug);
-  var nomSpan = row.querySelector('.plan-nom');
-  var inp = document.createElement('input');
-  inp.type='number'; inp.inputMode='numeric'; inp.className='plan-inp'; inp.value=state.plans[key]; inp.min=0;
+  var key=decKey(slug); if(!key) return;
+  var row=document.getElementById('pr_'+slug);
+  var nomSpan=row.querySelector('.plan-nom');
+  var inp=document.createElement('input'); inp.type='number'; inp.inputMode='numeric'; inp.className='plan-inp'; inp.value=state.plans[key]; inp.min=0;
   nomSpan.replaceWith(inp); inp.focus(); inp.select();
   function commit(){
-    var v = parseInt(inp.value)||0; state.plans[key]=v;
-    inp.replaceWith(nomSpan);
-    nomSpan.innerHTML = fmt(v)+' <span class="plan-edit-ic">&#9999;&#65039;</span>';
-    fbSetMeta({ plans: state.plans });
-    render();
-    document.getElementById('setupTotal').textContent = fmt(calcAnggaran());
+    var v=parseInt(inp.value)||0; state.plans[key]=v;
+    inp.replaceWith(nomSpan); nomSpan.innerHTML=fmt(v)+' <span class="plan-edit-ic">&#9999;&#65039;</span>';
+    fbSetMeta({plans:state.plans}); render();
+    document.getElementById('setupTotal').textContent=fmt(calcAnggaran());
     showToast(key+': '+fmt(v));
   }
-  inp.addEventListener('blur', commit);
-  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') inp.replaceWith(nomSpan); });
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') inp.replaceWith(nomSpan); });
 }
 
-window.editTitle = function(){
-  var el=document.getElementById('appTitle'); var cur=el.textContent;
-  var inp=document.createElement('input'); inp.className='title-inp'; inp.value=cur; inp.maxLength=40;
-  el.replaceWith(inp); inp.focus(); inp.select();
-  function commit(){
-    var v=inp.value.trim()||cur; inp.replaceWith(el); el.textContent=v; document.title=v;
-    state.title=v; fbSetMeta({title:v}); showToast('Judul disimpan');
-  }
-  inp.addEventListener('blur',commit);
-  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape')inp.replaceWith(el);});
+// ── INIT UI ───────────────────────────────────────────────────────────────────
+document.getElementById('tglTunai').value=today;
+document.getElementById('tglRek').value=today;
+document.getElementById('tglTarik').value=today;
+buildCatOptions();
+render();
+</script>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, set, push, remove }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+var FB = {
+  apiKey:"AIzaSyD4TmIoUhFgYoOptjcRD6t3fubY7kfKgGY",
+  authDomain:"budget-mudik.firebaseapp.com",
+  databaseURL:"https://budget-mudik-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"budget-mudik",
+  storageBucket:"budget-mudik.firebasestorage.app",
+  messagingSenderId:"1054570288622",
+  appId:"1:1054570288622:web:b8557dfd1f418ea8bc6aff"
 };
 
-window.editSub = function(){
-  var el=document.getElementById('appSub'); var cur=el.textContent;
-  var inp=document.createElement('input'); inp.className='sub-inp'; inp.value=cur; inp.maxLength=40;
-  el.replaceWith(inp); inp.focus(); inp.select();
-  function commit(){
-    var v=inp.value.trim()||cur; inp.replaceWith(el); el.textContent=v;
-    state.sub=v; fbSetMeta({sub:v}); showToast('Subtitle disimpan');
-  }
-  inp.addEventListener('blur',commit);
-  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape')inp.replaceWith(el);});
-};
+try {
+  var app = initializeApp(FB);
+  var db  = getDatabase(app);
 
-// ── EXPORT ───────────────────────────────────────────────────────────────────
-window.doExportJSON = function(){
-  var blob=new Blob([JSON.stringify({title:state.title,sub:state.sub,plans:state.plans,txData:state.txData,dompet:state.dompet},null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob); var a=document.createElement('a');
-  a.href=url; a.download=state.title.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_backup.json';
-  a.click(); URL.revokeObjectURL(url); showToast('Backup disimpan');
-};
+  // Wire up Firebase write functions
+  fbAddTx    = function(tx){ setSyncDot('sync'); push(ref(db,'budget/txData'),tx); };
+  fbRemoveTx = function(k){  setSyncDot('sync'); remove(ref(db,'budget/txData/'+k)); };
+  fbSetTx    = function(k,v){ setSyncDot('sync'); set(ref(db,'budget/txData/'+k),v); };
+  fbSetMeta  = function(obj){
+    setSyncDot('sync');
+    if(obj.title!==undefined)  set(ref(db,'budget/title'),  obj.title);
+    if(obj.sub!==undefined)    set(ref(db,'budget/sub'),    obj.sub);
+    if(obj.plans!==undefined)  set(ref(db,'budget/plans'),  obj.plans);
+    if(obj.txData===null)      set(ref(db,'budget/txData'), null);
+    setTimeout(function(){ setSyncDot('ok'); },1000);
+  };
 
-window.doExportCSV = function(){
-  var rows=[['Tanggal','Tipe','Kategori','Metode','Nominal','Keterangan']];
-  state.txData.forEach(function(t){
-    var tipe=t.type==='tunai'?'Tunai':t.type==='rek'?'Rekening':'Ambil Tunai';
-    rows.push([t.tgl,tipe,t.kat,t.met||'',t.nom,t.note||'']);
-  });
-  var nl=String.fromCharCode(10), q='"', sep=',';
-  var csv=rows.map(function(r){return r.map(function(v){return q+String(v).split(q).join(q+q)+q;}).join(sep);}).join(nl);
-  var blob=new Blob([String.fromCharCode(65279)+csv],{type:'text/csv;charset=utf-8'});
-  var url=URL.createObjectURL(blob); var a=document.createElement('a');
-  a.href=url; a.download=state.title.replace(/[^a-z0-9]/gi,'_').toLowerCase()+'_data.csv';
-  a.click(); URL.revokeObjectURL(url); showToast('CSV disimpan');
-};
+  // Listen for realtime updates
+  onValue(ref(db,'budget'), function(snap){
+    var data=snap.val();
+    if(!data){ setSyncDot('ok'); return; }
+    if(data.title){ state.title=data.title; document.getElementById('appTitle').textContent=data.title; document.title=data.title; }
+    if(data.sub)  { state.sub=data.sub;     document.getElementById('appSub').textContent=data.sub; }
+    if(data.plans){ state.plans=data.plans;  buildCatOptions(); }
+    if(data.txData){
+      state.txData=Object.keys(data.txData).map(function(k){ var t=data.txData[k]; t._fbKey=k; return t; }).sort(function(a,b){ return b.id-a.id; });
+    } else { state.txData=[]; }
+    setSyncDot('ok');
+    render();
+    var settings=document.getElementById('page-settings');
+    if(settings&&settings.classList.contains('active')) renderSettings();
+  }, function(){ setSyncDot('err'); });
 
-window.doReset = function(){
-  if(!confirm('Reset semua data di Firebase? Semua HP akan terpengaruh. Lanjutkan?')) return;
-  set(ref(db,'budget'), {
-    title: state.title, sub: state.sub,
-    plans: Object.assign({},PLANS_DEF)
-  });
-  showToast('Data direset');
-};
+} catch(e){ console.error('Firebase error:',e); setSyncDot('err'); }
 
-// ── PWA INSTALL ───────────────────────────────────────────────────────────────
-var deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){
-  e.preventDefault(); deferredPrompt=e;
-  var b=document.getElementById('installBanner'); if(b) b.style.display='flex';
-});
-window.doInstall=function(){
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(function(){ deferredPrompt=null; });
-};
-
-function showToast(msg){
-  var e=document.getElementById('toast');
-  e.textContent=msg; e.classList.add('show');
-  setTimeout(function(){ e.classList.remove('show'); },3000);
-}
+// PWA install
+window._deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); window._deferredPrompt=e; var b=document.getElementById('installBanner'); if(b) b.style.display='flex'; });
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').then(function(reg){
-    // Cek update setiap app dibuka
     reg.update();
-    // Kalau ada service worker baru, langsung aktifkan tanpa tunggu
-    reg.addEventListener('updatefound', function(){
-      var newSW = reg.installing;
-      newSW.addEventListener('statechange', function(){
-        if(newSW.state==='installed' && navigator.serviceWorker.controller){
-          // Ada versi baru - reload otomatis
-          navigator.serviceWorker.controller.postMessage({type:'SKIP_WAITING'});
-        }
+    reg.addEventListener('updatefound',function(){
+      var sw=reg.installing;
+      sw.addEventListener('statechange',function(){
+        if(sw.state==='installed'&&navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({type:'SKIP_WAITING'});
       });
     });
   }).catch(function(){});
-
-  // Reload halaman saat service worker baru aktif
-  var refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', function(){
-    if(!refreshing){ refreshing=true; window.location.reload(); }
-  });
+  var refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',function(){ if(!refreshing){ refreshing=true; window.location.reload(); } });
 }
 </script>
 </body>
