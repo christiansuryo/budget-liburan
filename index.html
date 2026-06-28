@@ -123,6 +123,8 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .leg-d{width:8px;height:8px;border-radius:50%}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px)}
 .overlay.open{opacity:1;pointer-events:all}
+.cat-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(2px)}
+.cat-overlay.open{opacity:1;pointer-events:all}
 .sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:var(--wh);border-radius:20px 20px 0 0;z-index:201;padding:0 20px calc(28px + env(safe-area-inset-bottom,0));transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:92dvh;overflow-y:auto}
 .sheet.open{transform:translateX(-50%) translateY(0)}
 .sheet-handle{width:36px;height:4px;background:var(--g2);border-radius:99px;margin:12px auto 18px}
@@ -483,7 +485,7 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   <button class="btn-sub bs-or" id="btnSaveEdit" style="background:var(--or)">&#10003; Simpan perubahan</button>
 </div>
 
-<div class="overlay" id="catOverlay" onclick="closeCatSheet()"></div>
+<div class="cat-overlay" id="catOverlay" onclick="closeCatSheet()"></div>
 <div class="cat-sheet" id="catSheet">
   <div class="cat-sheet-handle"></div>
   <div class="cat-sheet-header">
@@ -725,7 +727,8 @@ function openCatSheet(kat){
     }).join('');
   }
 
-  document.getElementById('catOverlay').classList.add('open');
+  var co = document.getElementById('catOverlay');
+  co.classList.add('open');
   document.getElementById('catSheet').classList.add('open');
 }
 
