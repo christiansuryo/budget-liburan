@@ -183,6 +183,27 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .sub-inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;font-size:11px;font-family:var(--fn);padding:2px 6px;width:150px;outline:none}
 .plan-inp{height:36px;border:1.5px solid var(--or);border-radius:8px;padding:0 8px;font-size:14px;font-family:var(--fn);text-align:right;background:var(--wh);outline:none;width:120px}
 .plan-name-inp{height:36px;border:1.5px solid var(--bl);border-radius:8px;padding:0 8px;font-size:13px;font-family:var(--fn);background:var(--wh);outline:none;flex:1}
+.cat-row{cursor:pointer;transition:background .15s}
+.cat-row:active{background:var(--g0)}
+.cat-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:var(--wh);border-radius:20px 20px 0 0;z-index:201;padding:0 0 calc(28px + env(safe-area-inset-bottom,0));transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:88dvh;overflow-y:auto}
+.cat-sheet.open{transform:translateX(-50%) translateY(0)}
+.cat-sheet-handle{width:36px;height:4px;background:var(--g2);border-radius:99px;margin:12px auto 0}
+.cat-sheet-header{padding:16px 20px 12px;border-bottom:1px solid var(--g1);position:sticky;top:0;background:var(--wh);z-index:1}
+.cat-sheet-title{font-size:17px;font-weight:600;color:var(--g9)}
+.cat-sheet-stats{display:flex;gap:16px;margin-top:8px}
+.cat-stat{font-size:12px;color:var(--g4)}
+.cat-stat span{font-weight:600;font-family:var(--mo);color:var(--g9)}
+.cat-stat-pct{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;font-family:var(--mo)}
+.cat-sheet-list{padding:8px 0}
+.cat-tx-item{display:flex;align-items:center;padding:12px 20px;gap:12px;border-bottom:1px solid var(--g1);cursor:pointer}
+.cat-tx-item:last-child{border-bottom:none}
+.cat-tx-item:active{background:var(--g0)}
+.cat-tx-left{flex:1;min-width:0}
+.cat-tx-date{font-size:11px;color:var(--g4);margin-bottom:2px}
+.cat-tx-note{font-size:13px;font-weight:500;color:var(--g9)}
+.cat-tx-met{font-size:11px;color:var(--g4);margin-top:1px}
+.cat-tx-nom{font-size:14px;font-weight:600;font-family:var(--mo);text-align:right;flex-shrink:0}
+.cat-empty{text-align:center;padding:32px 20px;color:var(--g4);font-size:13px}
 .pie-card{background:var(--wh);border-radius:var(--rmd);padding:16px;box-shadow:var(--sh);margin-bottom:12px}
 .pie-card-title{font-size:13px;font-weight:500;color:var(--g9);margin-bottom:14px}
 .pie-wrap{display:flex;align-items:center;gap:16px}
@@ -462,6 +483,20 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   <button class="btn-sub bs-or" id="btnSaveEdit" style="background:var(--or)">&#10003; Simpan perubahan</button>
 </div>
 
+<div class="overlay" id="catOverlay" onclick="closeCatSheet()"></div>
+<div class="cat-sheet" id="catSheet">
+  <div class="cat-sheet-handle"></div>
+  <div class="cat-sheet-header">
+    <div class="cat-sheet-title" id="catSheetTitle">Makan Jajan</div>
+    <div class="cat-sheet-stats">
+      <div class="cat-stat">Total <span id="catSheetTotal">Rp 0</span></div>
+      <div class="cat-stat">Transaksi <span id="catSheetCount">0</span></div>
+      <div class="cat-stat"><span class="cat-stat-pct" id="catSheetPct">0%</span></div>
+    </div>
+  </div>
+  <div class="cat-sheet-list" id="catSheetList"></div>
+</div>
+
 <script>
 // ── GLOBAL STATE (accessible before Firebase loads) ──────────────────────────
 var PLANS_DEF = {
@@ -644,6 +679,60 @@ function showToast(msg){
 }
 
 function encKey(k){ return k.replace(/[^a-z0-9]/gi,'_'); }
+
+function openCatSheet(kat){
+  var txs = state.txData.filter(function(t){ return (t.type==='tunai'||t.type==='rek') && t.kat===kat; });
+  txs.sort(function(a,b){ return b.tgl>a.tgl?1:-1; });
+  var total = txs.reduce(function(a,t){ return a+t.nom; },0);
+  var anggaran = calcAnggaran();
+  var plan = state.plans[kat]||0;
+  var pct = plan>0 ? Math.round(total/plan*100) : 0;
+  var isOver = plan>0 && total>plan;
+
+  document.getElementById('catSheetTitle').textContent = kat;
+  document.getElementById('catSheetTotal').textContent = fmt(total);
+  document.getElementById('catSheetCount').textContent = txs.length;
+  var pctEl = document.getElementById('catSheetPct');
+  pctEl.textContent = plan>0 ? pct+'% dari plan' : 'no plan';
+  pctEl.style.background = !plan?'var(--g1)':isOver?'var(--re-l)':'var(--gr-l)';
+  pctEl.style.color = !plan?'var(--g4)':isOver?'var(--re)':'var(--gr)';
+
+  var listEl = document.getElementById('catSheetList');
+  listEl.onclick = function(e){
+    var item = e.target.closest('.cat-tx-item');
+    if(!item || !item.dataset.fk) return;
+    var fk = item.dataset.fk;
+    closeCatSheet();
+    setTimeout(function(){ openEdit(fk); }, 320);
+  };
+  if(!txs.length){
+    listEl.innerHTML = '<div class="cat-empty">Belum ada transaksi untuk kategori ini</div>';
+  } else {
+    listEl.innerHTML = txs.map(function(t){
+      var d = new Date(t.tgl+'T00:00:00').toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+      var note = t.note || '';
+      var met = t.type==='tunai'?'Tunai':t.met;
+      var nomCol = t.type==='tunai'?'var(--am)':'var(--bl)';
+      var fk = t._fbKey||'';
+      return '<div class="cat-tx-item" data-fk="'+fk+'">'
+        +'<div class="cat-tx-left">'
+        +'<div class="cat-tx-date">'+d+'</div>'
+        +'<div class="cat-tx-note">'+(note||met)+'</div>'
+        +(note?'<div class="cat-tx-met">'+met+'</div>':'')
+        +'</div>'
+        +'<div class="cat-tx-nom" style="color:'+nomCol+'">-'+fmt(t.nom)+'</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  document.getElementById('catOverlay').classList.add('open');
+  document.getElementById('catSheet').classList.add('open');
+}
+
+function closeCatSheet(){
+  document.getElementById('catOverlay').classList.remove('open');
+  document.getElementById('catSheet').classList.remove('open');
+}
 function decKey(s){ return Object.keys(state.plans).find(function(k){ return encKey(k)===s; }); }
 
 function render(){
@@ -688,6 +777,10 @@ function render(){
     catEl.innerHTML='<div class="empty"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
     pieEl.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
   } else {
+    catEl.onclick = function(e){
+      var row = e.target.closest('.cat-row');
+      if(row && row.dataset.kat) openCatSheet(row.dataset.kat);
+    };
     catEl.innerHTML=sorted.map(function(k){
       var v=katTot[k],tun=katTunai[k]||0,rek=katRek[k]||0;
       var plan=state.plans[k]||0,hasPlan=plan>0;
@@ -700,7 +793,7 @@ function render(){
       var srcCol=(tun>0&&rek===0)?'var(--am)':(rek>0&&tun===0?'var(--bl)':'var(--g4)');
       var pillTxt=!hasPlan?'no plan':pctItem+'%';
       var overTxt=isOver?' | OVER +'+fmt(v-plan):'';
-      return '<div class="cat-row"><div class="cat-row-top">'
+      return '<div class="cat-row" data-kat="'+k+'"><div class="cat-row-top">'
         +'<div class="cat-ic" style="background:'+icBg+'">'+(ICONS[k]||'&#128230;')+'</div>'
         +'<div class="cat-info"><div class="cat-name">'+k+'</div>'
         +'<div class="cat-src" style="color:'+srcCol+'">'+srcTxt+overTxt+'</div></div>'
