@@ -523,7 +523,7 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 <script>
 // ── GLOBAL STATE (accessible before Firebase loads) ──────────────────────────
 // ── GOOGLE SHEETS CONFIG ────────────────────────────────────────
-var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy1UqADtXOLMXhswsh-310gHGodH1CC5wFU4W0tiUtDhbxWld0cFANai69tXFDkuo/exec';
+var APPS_SCRIPT_URL = 'GANTI_DENGAN_URL_APPS_SCRIPT';
 
 var PLANS_DEF = {
   'SIM Mas Nathan':1500000,'KTP Mas':200000,'Makan Jajan':600000,
@@ -699,57 +699,42 @@ function doReset(){
 }
 
 // ── GOOGLE SHEETS SYNC ───────────────────────────────────────────
-function buildSyncPayload(action){
-  return JSON.stringify({
-    action: action || 'sync',
-    title: document.getElementById('appTitle').textContent,
-    sub: document.getElementById('appSub').textContent,
-    plans: state.plans,
-    txData: state.txData,
-    dompet: state.dompet
+function callAppsScript(action, onDone){
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
+    showToast('URL Apps Script belum diset'); return;
+  }
+  // Encode payload as URL param - avoids CORS redirect issue with POST
+  var payload = JSON.stringify({
+    action: action,
+    title:  document.getElementById('appTitle').textContent,
+    sub:    document.getElementById('appSub').textContent,
+    plans:  state.plans,
+    txData: state.txData
   });
+  var url = APPS_SCRIPT_URL + '?data=' + encodeURIComponent(payload);
+  fetch(url, {method:'GET', mode:'no-cors'})
+    .then(function(){ if(onDone) onDone(); })
+    .catch(function(err){ showToast('Gagal: ' + err.message); });
 }
 
 function doSyncSheets(){
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
-    showToast('URL Apps Script belum diset');
-    return;
-  }
   var statusEl = document.getElementById('sheetsStatus');
   if(statusEl) statusEl.textContent = 'Menyync...';
-  fetch(APPS_SCRIPT_URL, {
-    method:'POST', mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body: buildSyncPayload('sync')
-  }).then(function(){
+  callAppsScript('sync', function(){
     var now = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
     if(statusEl) statusEl.textContent = 'Terakhir sync: ' + now;
     showToast('Sync ke Google Sheets berhasil');
-  }).catch(function(err){
-    if(statusEl) statusEl.textContent = 'Sync gagal: ' + err.message;
-    showToast('Sync gagal - cek koneksi');
   });
 }
 
 function doEndJourney(){
   if(!confirm('Tutup perjalanan ini? Resume dan analisa akan dibuat di Google Sheets.')) return;
-  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
-    showToast('URL Apps Script belum diset di pengaturan');
-    return;
-  }
-  showToast('Membuat resume...');
-  fetch(APPS_SCRIPT_URL, {
-    method:'POST', mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body: buildSyncPayload('end_journey')
-  }).then(function(){
-    showToast('Resume perjalanan berhasil dibuat di Google Sheets!');
-    // Mark as ended in Firebase
+  showToast('Membuat resume di Google Sheets...');
+  callAppsScript('end_journey', function(){
+    showToast('Resume perjalanan berhasil dibuat!');
     if(typeof fbSetMeta === 'function'){
       fbSetMeta({ended: new Date().toISOString()});
     }
-  }).catch(function(err){
-    showToast('Gagal: ' + err.message);
   });
 }
 
