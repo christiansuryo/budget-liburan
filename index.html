@@ -523,7 +523,7 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 <script>
 // ── GLOBAL STATE (accessible before Firebase loads) ──────────────────────────
 // ── GOOGLE SHEETS CONFIG ────────────────────────────────────────
-var APPS_SCRIPT_URL = 'GANTI_DENGAN_URL_APPS_SCRIPT';
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy1UqADtXOLMXhswsh-310gHGodH1CC5wFU4W0tiUtDhbxWld0cFANai69tXFDkuo/exec';
 
 var PLANS_DEF = {
   'SIM Mas Nathan':1500000,'KTP Mas':200000,'Makan Jajan':600000,
@@ -703,18 +703,39 @@ function callAppsScript(action, onDone){
   if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
     showToast('URL Apps Script belum diset'); return;
   }
-  // Encode payload as URL param - avoids CORS redirect issue with POST
-  var payload = JSON.stringify({
+  var payload = {
     action: action,
     title:  document.getElementById('appTitle').textContent,
     sub:    document.getElementById('appSub').textContent,
     plans:  state.plans,
     txData: state.txData
-  });
-  var url = APPS_SCRIPT_URL + '?data=' + encodeURIComponent(payload);
-  fetch(url, {method:'GET', mode:'no-cors'})
-    .then(function(){ if(onDone) onDone(); })
-    .catch(function(err){ showToast('Gagal: ' + err.message); });
+  };
+  // Kirim via hidden form - paling andal untuk Apps Script (tidak ada CORS issue)
+  var form = document.createElement('form');
+  form.method = 'POST';
+  form.action = APPS_SCRIPT_URL;
+  form.target = 'gs_iframe';
+  form.style.display = 'none';
+  var input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'payload';
+  input.value = JSON.stringify(payload);
+  form.appendChild(input);
+  // Buat iframe target tersembunyi
+  var iframe = document.getElementById('gs_iframe');
+  if(!iframe){
+    iframe = document.createElement('iframe');
+    iframe.name = 'gs_iframe';
+    iframe.id   = 'gs_iframe';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
+  document.body.appendChild(form);
+  iframe.onload = function(){
+    document.body.removeChild(form);
+    if(onDone) onDone();
+  };
+  form.submit();
 }
 
 function doSyncSheets(){
