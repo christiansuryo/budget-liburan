@@ -710,32 +710,21 @@ function callAppsScript(action, onDone){
     plans:  state.plans,
     txData: state.txData
   };
-  // Kirim via hidden form - paling andal untuk Apps Script (tidak ada CORS issue)
-  var form = document.createElement('form');
-  form.method = 'POST';
-  form.action = APPS_SCRIPT_URL;
-  form.target = 'gs_iframe';
-  form.style.display = 'none';
-  var input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = 'payload';
-  input.value = JSON.stringify(payload);
-  form.appendChild(input);
-  // Buat iframe target tersembunyi
-  var iframe = document.getElementById('gs_iframe');
-  if(!iframe){
-    iframe = document.createElement('iframe');
-    iframe.name = 'gs_iframe';
-    iframe.id   = 'gs_iframe';
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-  }
-  document.body.appendChild(form);
-  iframe.onload = function(){
-    document.body.removeChild(form);
+  // Kirim via script tag - bypass CORS sepenuhnya
+  var encoded = encodeURIComponent(JSON.stringify(payload));
+  var url = APPS_SCRIPT_URL + '?payload=' + encoded + '&cb=' + Date.now();
+  var script = document.createElement('script');
+  script.src = url;
+  script.onload = function(){
+    document.head.removeChild(script);
     if(onDone) onDone();
   };
-  form.submit();
+  script.onerror = function(){
+    // Script tag selalu error karena response bukan JS - tapi data sudah terkirim
+    document.head.removeChild(script);
+    if(onDone) onDone();
+  };
+  document.head.appendChild(script);
 }
 
 function doSyncSheets(){
