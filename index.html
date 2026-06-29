@@ -1029,12 +1029,7 @@ try {
   var db   = getDatabase(app);
   var auth = getAuth(app);
 
-  // Login anonymous - wajib karena rules Firebase butuh auth != null
-  signInAnonymously(auth).catch(function(err){
-    console.error('Firebase auth error:', err);
-  });
-
-  // Wire up Firebase write functions
+  // Wire up Firebase write functions (bisa dipasang sebelum login)
   fbAddTx    = function(tx){ setSyncDot('sync'); push(ref(db,'budget/txData'),tx); };
   fbRemoveTx = function(k){  setSyncDot('sync'); remove(ref(db,'budget/txData/'+k)); };
   fbSetTx    = function(k,v){ setSyncDot('sync'); set(ref(db,'budget/txData/'+k),v); };
@@ -1047,8 +1042,10 @@ try {
     setTimeout(function(){ setSyncDot('ok'); },1000);
   };
 
-  // Listen for realtime updates
-  onValue(ref(db,'budget'), function(snap){
+  // Login anonymous DULU, baru pasang listener setelah berhasil
+  signInAnonymously(auth).then(function(){
+    // Listen for realtime updates - hanya dijalankan setelah auth sukses
+    onValue(ref(db,'budget'), function(snap){
     var data=snap.val();
     if(!data){ setSyncDot('ok'); return; }
     if(data.title){ state.title=data.title; document.getElementById('appTitle').textContent=data.title; document.title=data.title; }
@@ -1061,7 +1058,11 @@ try {
     render();
     var settings=document.getElementById('page-settings');
     if(settings&&settings.classList.contains('active')) renderSettings();
-  }, function(){ setSyncDot('err'); });
+    }, function(){ setSyncDot('err'); });
+  }).catch(function(err){
+    console.error('Firebase auth error:', err);
+    setSyncDot('err');
+  });
 
 } catch(e){ console.error('Firebase error:',e); setSyncDot('err'); }
 
