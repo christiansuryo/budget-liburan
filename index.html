@@ -171,6 +171,14 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .exp-lbl{font-size:12px;font-weight:600;color:var(--g9);text-align:center;line-height:1.3}
 .exp-sub{font-size:10px;color:var(--g4);text-align:center;line-height:1.3}
 .btn-danger{width:100%;height:48px;border-radius:var(--rmd);background:var(--re-l);color:var(--re);font-size:14px;font-weight:600;font-family:var(--fn);border:none;cursor:pointer}
+.btn-eoj{width:100%;height:52px;border-radius:var(--rlg);background:linear-gradient(135deg,#3B6D11,#2A5009);color:#fff;font-size:15px;font-weight:600;font-family:var(--fn);border:none;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shm)}
+.btn-eoj:active{filter:brightness(.9)}
+.btn-sync-sheet{width:100%;height:46px;border-radius:var(--rmd);background:var(--gr-l);color:var(--gr);font-size:14px;font-weight:600;font-family:var(--fn);border:1.5px solid rgba(59,109,17,.2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-sync-sheet:active{background:var(--gr);color:#fff}
+.sheets-card{background:var(--wh);border-radius:var(--rlg);padding:14px 16px;box-shadow:var(--sh);margin-bottom:12px}
+.sheets-card-title{font-size:13px;font-weight:600;color:var(--g9);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.sheets-card-sub{font-size:11px;color:var(--g4);line-height:1.6;margin-bottom:12px}
+.sheets-status{font-size:11px;color:var(--g4);margin-top:8px;text-align:center}
 .install-banner{background:linear-gradient(135deg,#185FA5,#0D4078);border-radius:var(--rlg);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;box-shadow:var(--shm)}
 .install-banner-ic{font-size:28px;flex-shrink:0}
 .install-banner-txt{flex:1}
@@ -366,6 +374,19 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
       </div>
     </div>
 
+    <div class="sec">Perjalanan</div>
+    <button class="btn-eoj" onclick="doEndJourney()">
+      &#127937; Tutup perjalanan &amp; buat resume
+    </button>
+
+    <div class="sec">Google Sheets</div>
+    <div class="sheets-card">
+      <div class="sheets-card-title">&#128202; Sync ke Google Sheets</div>
+      <div class="sheets-card-sub">Data akan otomatis tersync ke Google Sheets setiap 5 menit. Tekan tombol di bawah untuk sync manual sekarang.</div>
+      <button class="btn-sync-sheet" onclick="doSyncSheets()">&#9654; Sync sekarang</button>
+      <div class="sheets-status" id="sheetsStatus">Belum pernah sync</div>
+    </div>
+
     <div class="sec">Reset</div>
     <button class="btn-danger" onclick="doReset()">&#128465; Reset semua data</button>
     <div style="height:16px"></div>
@@ -501,6 +522,9 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 
 <script>
 // ── GLOBAL STATE (accessible before Firebase loads) ──────────────────────────
+// ── GOOGLE SHEETS CONFIG ────────────────────────────────────────
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwy1UqADtXOLMXhswsh-310gHGodH1CC5wFU4W0tiUtDhbxWld0cFANai69tXFDkuo/exec';
+
 var PLANS_DEF = {
   'SIM Mas Nathan':1500000,'KTP Mas':200000,'Makan Jajan':600000,
   'Oleh-oleh':1300000,'Bensin':1000000,'e-Toll':1000000,
@@ -674,6 +698,68 @@ function doReset(){
   showToast('Data direset');
 }
 
+// ── GOOGLE SHEETS SYNC ───────────────────────────────────────────
+function buildSyncPayload(action){
+  return JSON.stringify({
+    action: action || 'sync',
+    title: document.getElementById('appTitle').textContent,
+    sub: document.getElementById('appSub').textContent,
+    plans: state.plans,
+    txData: state.txData,
+    dompet: state.dompet
+  });
+}
+
+function doSyncSheets(){
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
+    showToast('URL Apps Script belum diset');
+    return;
+  }
+  var statusEl = document.getElementById('sheetsStatus');
+  if(statusEl) statusEl.textContent = 'Menyync...';
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: buildSyncPayload('sync')
+  }).then(function(){
+    var now = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    if(statusEl) statusEl.textContent = 'Terakhir sync: ' + now;
+    showToast('Sync ke Google Sheets berhasil');
+  }).catch(function(err){
+    if(statusEl) statusEl.textContent = 'Sync gagal: ' + err.message;
+    showToast('Sync gagal - cek koneksi');
+  });
+}
+
+function doEndJourney(){
+  if(!confirm('Tutup perjalanan ini? Resume dan analisa akan dibuat di Google Sheets.')) return;
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
+    showToast('URL Apps Script belum diset di pengaturan');
+    return;
+  }
+  showToast('Membuat resume...');
+  fetch(APPS_SCRIPT_URL, {
+    method:'POST', mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body: buildSyncPayload('end_journey')
+  }).then(function(){
+    showToast('Resume perjalanan berhasil dibuat di Google Sheets!');
+    // Mark as ended in Firebase
+    if(typeof fbSetMeta === 'function'){
+      fbSetMeta({ended: new Date().toISOString()});
+    }
+  }).catch(function(err){
+    showToast('Gagal: ' + err.message);
+  });
+}
+
+// Auto sync every 5 minutes
+setInterval(function(){
+  if(APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf('GANTI') === -1 && state.txData.length > 0){
+    doSyncSheets();
+  }
+}, 5 * 60 * 1000);
+
 function showToast(msg){
   var e=document.getElementById('toast');
   e.textContent=msg; e.classList.add('show');
@@ -780,10 +866,6 @@ function render(){
     catEl.innerHTML='<div class="empty"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
     pieEl.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-ic">&#128202;</div><div>Belum ada pengeluaran</div></div>';
   } else {
-    catEl.onclick = function(e){
-      var row = e.target.closest('.cat-row');
-      if(row && row.dataset.kat) openCatSheet(row.dataset.kat);
-    };
     catEl.innerHTML=sorted.map(function(k){
       var v=katTot[k],tun=katTunai[k]||0,rek=katRek[k]||0;
       var plan=state.plans[k]||0,hasPlan=plan>0;
@@ -946,6 +1028,15 @@ document.getElementById('tglTunai').value=today;
 document.getElementById('tglRek').value=today;
 document.getElementById('tglTarik').value=today;
 buildCatOptions();
+
+// Single document-level handler for category row clicks
+document.addEventListener('click', function(e){
+  var row = e.target.closest('.cat-row');
+  if(row && row.dataset.kat){
+    openCatSheet(row.dataset.kat);
+  }
+});
+
 render();
 </script>
 
