@@ -188,6 +188,8 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .sub-inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;font-size:11px;font-family:var(--fn);padding:2px 6px;width:150px;outline:none}
 .plan-inp{height:36px;border:1.5px solid var(--or);border-radius:8px;padding:0 8px;font-size:14px;font-family:var(--fn);text-align:right;background:var(--wh);outline:none;width:120px}
 .plan-name-inp{height:36px;border:1.5px solid var(--bl);border-radius:8px;padding:0 8px;font-size:13px;font-family:var(--fn);background:var(--wh);outline:none;flex:1}
+.btn-del-plan{background:none;border:none;color:var(--g2);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:50%;flex-shrink:0;transition:color .15s,background .15s}
+.btn-del-plan:active{color:var(--re);background:var(--re-l)}
 .new-trip-banner{background:linear-gradient(135deg,#3B6D11,#2A5009);border-radius:var(--rlg);padding:18px;margin-bottom:12px;display:none}
 .new-trip-banner.show{display:block}
 .new-trip-title{font-size:15px;font-weight:600;color:#fff;margin-bottom:4px}
@@ -1122,7 +1124,9 @@ function renderSettings(){
       +'<div class="plan-name-wrap"><span class="plan-name" data-action="editname" data-k="'+ek+'" style="cursor:pointer">'+k
       +' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>'
       +'<span class="plan-nom" data-action="editnom" data-k="'+ek+'" style="cursor:pointer">'+fmt(state.plans[k])
-      +' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>';
+      +' <span class="plan-edit-ic">&#9999;&#65039;</span></span>'
+      +'<button class="btn-del-plan" data-action="delplan" data-k="'+ek+'" title="Hapus kategori">&#10005;</button>'
+      +'</div>';
   }).join('');
   document.getElementById('setupTotal').textContent=fmt(calcAnggaran());
   var addRow=document.createElement('div'); addRow.className='add-plan-row';
@@ -1136,6 +1140,7 @@ function renderSettings(){
     if(el.dataset.action==='editname') editPlanName(el.dataset.k);
     if(el.dataset.action==='editnom')  editPlanNom(el.dataset.k);
     if(el.dataset.action==='editicon') openIconPicker(el.dataset.k);
+    if(el.dataset.action==='delplan')  deletePlan(el.dataset.k);
   });
 }
 
@@ -1162,6 +1167,27 @@ function editPlanName(slug){
   }
   inp.addEventListener('blur',commit);
   inp.addEventListener('keydown',function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape') inp.replaceWith(nameSpan); });
+}
+
+function deletePlan(slug){
+  var key = decKey(slug);
+  if(!key) return;
+  // Cek apakah kategori masih dipakai di transaksi
+  var used = state.txData.some(function(t){ return t.kat === key; });
+  if(used){
+    if(!confirm('Kategori "'+key+'" masih ada di transaksi. Tetap hapus dari rencana anggaran?')) return;
+  } else {
+    if(!confirm('Hapus kategori "'+key+'"?')) return;
+  }
+  delete state.plans[key];
+  delete ICONS[key];
+  if(typeof window.fbSetMeta === 'function'){
+    window.fbSetMeta({plans: state.plans, icons: ICONS});
+  }
+  buildCatOptions();
+  renderSettings();
+  render();
+  showToast('Kategori "'+key+'" dihapus');
 }
 
 function editPlanNom(slug){
