@@ -578,10 +578,11 @@ var editingFbKey = null;
 var fbDB = null; // set after Firebase loads
 
 // ── FIREBASE WRITE STUBS (replaced after Firebase loads) ────────────────────
-var fbAddTx     = function(tx){ console.warn('Firebase not ready'); };
-var fbRemoveTx  = function(k){  console.warn('Firebase not ready'); };
-var fbSetMeta   = function(o){  console.warn('Firebase not ready'); };
-var fbSetTx     = function(k,v){ console.warn('Firebase not ready'); };
+window.fbAddTx     = function(tx){ console.warn('Firebase not ready'); };
+window.fbRemoveTx  = function(k){  console.warn('Firebase not ready'); };
+window.fbSetMeta   = function(o){  console.warn('Firebase not ready'); };
+window.fbSetTx     = function(k,v){ console.warn('Firebase not ready'); };
+window.fbRemoveAllTx = function(){  console.warn('Firebase not ready'); };
 
 function setSyncDot(s){
   var d  = document.getElementById('syncDot');
@@ -1216,11 +1217,11 @@ try {
   var app = initializeApp(FB);
   var db  = getDatabase(app);
 
-  // Wire up Firebase write functions
-  fbAddTx    = function(tx){ setSyncDot('sync'); push(ref(db,'budget/txData'),tx); };
-  fbRemoveTx = function(k){  setSyncDot('sync'); remove(ref(db,'budget/txData/'+k)); };
-  fbSetTx    = function(k,v){ setSyncDot('sync'); set(ref(db,'budget/txData/'+k),v); };
-  fbSetMeta  = function(obj){
+  // Wire up Firebase write functions - pakai window. agar plain script bisa akses
+  window.fbAddTx    = function(tx){ setSyncDot('sync'); push(ref(db,'budget/txData'),tx); };
+  window.fbRemoveTx = function(k){  setSyncDot('sync'); remove(ref(db,'budget/txData/'+k)); };
+  window.fbSetTx    = function(k,v){ setSyncDot('sync'); set(ref(db,'budget/txData/'+k),v); };
+  window.fbSetMeta  = function(obj){
     setSyncDot('sync');
     if(obj.title!==undefined)  set(ref(db,'budget/title'),  obj.title);
     if(obj.sub!==undefined)    set(ref(db,'budget/sub'),    obj.sub);
@@ -1231,7 +1232,7 @@ try {
     if(obj.txData===null)      set(ref(db,'budget/txData'), null);
     setTimeout(function(){ setSyncDot('ok'); },1000);
   };
-  fbRemoveAllTx = function(){
+  window.fbRemoveAllTx = function(){
     setSyncDot('sync');
     set(ref(db,'budget/txData'), null);
     set(ref(db,'budget/dompet'), 0);
