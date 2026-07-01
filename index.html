@@ -188,6 +188,29 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .sub-inp{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:5px;color:#fff;font-size:11px;font-family:var(--fn);padding:2px 6px;width:150px;outline:none}
 .plan-inp{height:36px;border:1.5px solid var(--or);border-radius:8px;padding:0 8px;font-size:14px;font-family:var(--fn);text-align:right;background:var(--wh);outline:none;width:120px}
 .plan-name-inp{height:36px;border:1.5px solid var(--bl);border-radius:8px;padding:0 8px;font-size:13px;font-family:var(--fn);background:var(--wh);outline:none;flex:1}
+.new-trip-banner{background:linear-gradient(135deg,#3B6D11,#2A5009);border-radius:var(--rlg);padding:18px;margin-bottom:12px;display:none}
+.new-trip-banner.show{display:block}
+.new-trip-title{font-size:15px;font-weight:600;color:#fff;margin-bottom:4px}
+.new-trip-sub{font-size:12px;color:rgba(255,255,255,.75);line-height:1.5;margin-bottom:14px}
+.new-trip-inputs{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.new-trip-inp{width:100%;height:44px;border:1.5px solid rgba(255,255,255,.3);border-radius:var(--rmd);padding:0 14px;font-size:14px;font-family:var(--fn);color:#fff;background:rgba(255,255,255,.15);outline:none}
+.new-trip-inp::placeholder{color:rgba(255,255,255,.5)}
+.new-trip-inp:focus{border-color:rgba(255,255,255,.7);background:rgba(255,255,255,.25)}
+.btn-new-trip{width:100%;height:48px;border-radius:var(--rmd);background:#fff;color:#3B6D11;font-size:15px;font-weight:600;font-family:var(--fn);border:none;cursor:pointer}
+.btn-new-trip:active{background:rgba(255,255,255,.85)}
+.icon-picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.icon-picker-overlay.show{display:flex}
+.icon-picker-sheet{background:var(--wh);border-radius:20px 20px 0 0;width:100%;max-width:430px;padding:16px 16px calc(28px + env(safe-area-inset-bottom,0));max-height:70dvh;overflow-y:auto}
+.icon-picker-title{font-size:15px;font-weight:600;color:var(--g9);margin-bottom:14px;text-align:center}
+.icon-picker-search{width:100%;height:42px;border:1.5px solid var(--g1);border-radius:var(--rmd);padding:0 12px;font-size:14px;font-family:var(--fn);outline:none;margin-bottom:12px}
+.icon-picker-search:focus{border-color:var(--or)}
+.icon-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.icon-opt{width:100%;aspect-ratio:1;border-radius:var(--rsm);border:2px solid transparent;background:var(--g0);display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
+.icon-opt:active{background:var(--or-l);border-color:var(--or)}
+.icon-opt.selected{background:var(--or-l);border-color:var(--or)}
+.at-title-row{display:flex;align-items:center;gap:6px;cursor:pointer}
+.at-sub-row{display:flex;align-items:center;gap:4px;cursor:pointer}
+.at-edit{font-size:11px;opacity:.65}
 .cat-row{cursor:pointer;transition:background .15s}
 .cat-row:active{background:var(--g0)}
 .cat-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;background:var(--wh);border-radius:20px 20px 0 0;z-index:201;padding:0 0 calc(28px + env(safe-area-inset-bottom,0));transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:88dvh;overflow-y:auto}
@@ -257,11 +280,13 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 <div class="appbar">
   <div class="appbar-row">
     <div class="at-wrap">
-      <div class="at-title-row">
+      <div class="at-title-row" onclick="editTitle()">
         <div class="at-title" id="appTitle">Budget Mudik 2026</div>
+        <span class="at-edit">&#9999;&#65039;</span>
       </div>
-      <div class="at-sub-row">
+      <div class="at-sub-row" onclick="editSub()">
         <div class="at-sub" id="appSub">Liburan Sekolah</div>
+        <span class="at-edit">&#9999;&#65039;</span>
         <span class="sync-dot" id="syncDot" title="Status sinkronisasi"></span>
       </div>
     </div>
@@ -374,6 +399,16 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
       <div class="sheets-card-sub">Data akan otomatis tersync ke Google Sheets setiap 5 menit. Tekan tombol di bawah untuk sync manual sekarang.</div>
       <button class="btn-sync-sheet" onclick="doSyncSheets()">&#9654; Sync sekarang</button>
       <div class="sheets-status" id="sheetsStatus">Belum pernah sync</div>
+    </div>
+
+    <div class="new-trip-banner" id="newTripBanner">
+      <div class="new-trip-title">&#127937; Siap untuk perjalanan baru?</div>
+      <div class="new-trip-sub">Rencana anggaran per kategori akan dipertahankan. Hanya transaksi yang akan direset.</div>
+      <div class="new-trip-inputs">
+        <input class="new-trip-inp" id="newTripTitle" placeholder="Judul perjalanan baru, misal: Budget Natal 2026">
+        <input class="new-trip-inp" id="newTripSub" placeholder="Subtitle, misal: Liburan Natal Keluarga">
+      </div>
+      <button class="btn-new-trip" onclick="doNewTrip()">&#10003; Mulai budget perjalanan baru</button>
     </div>
 
     <div class="sec">Reset</div>
@@ -509,6 +544,14 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   <div class="cat-sheet-list" id="catSheetList"></div>
 </div>
 
+<div class="icon-picker-overlay" id="iconPickerOverlay" onclick="closeIconPicker(event)">
+  <div class="icon-picker-sheet">
+    <div class="icon-picker-title">Pilih icon kategori</div>
+    <input class="icon-picker-search" id="iconSearch" placeholder="Cari icon..." oninput="filterIcons()">
+    <div class="icon-grid" id="iconGrid"></div>
+  </div>
+</div>
+
 <script>
 // ── GLOBAL STATE (accessible before Firebase loads) ──────────────────────────
 // ── GOOGLE SHEETS CONFIG ────────────────────────────────────────
@@ -528,7 +571,7 @@ var ICONS = {
 var state = {
   title:'Budget Mudik 2026', sub:'Liburan Sekolah',
   plans: Object.assign({}, PLANS_DEF),
-  txData: [], dompet: 0
+  txData: [], dompet: 0, prevTitle: ''
 };
 var today = new Date().toISOString().split('T')[0];
 var editingFbKey = null;
@@ -681,7 +724,8 @@ function callAppsScript(action, onDone){
   }
   // Apps Script langsung ambil data dari Firebase - tidak perlu kirim data dari app
   // Cukup kirim sinyal action saja via script tag
-  var url = APPS_SCRIPT_URL + '?action=' + action + '&cb=' + Date.now();
+  var prevT = encodeURIComponent(state.prevTitle || '');
+  var url = APPS_SCRIPT_URL + '?action=' + action + '&title=' + encodeURIComponent(document.getElementById('appTitle').textContent) + '&prevTitle=' + prevT + '&cb=' + Date.now();
   var script = document.createElement('script');
   script.src = url;
   script.onload = function(){
@@ -710,9 +754,18 @@ function doEndJourney(){
   if(!confirm('Tutup perjalanan ini? Resume dan analisa akan dibuat di Google Sheets.')) return;
   showToast('Membuat resume di Google Sheets...');
   callAppsScript('end_journey', function(){
-    showToast('Resume perjalanan berhasil dibuat!');
+    showToast('Resume berhasil dibuat! Siap buat perjalanan baru?');
     if(typeof fbSetMeta === 'function'){
       fbSetMeta({ended: new Date().toISOString()});
+    }
+    // Tampilkan banner buat perjalanan baru
+    var banner = document.getElementById('newTripBanner');
+    if(banner){
+      banner.classList.add('show');
+      // Pre-fill title dengan nama perjalanan sebelumnya sebagai hint
+      var oldTitle = document.getElementById('appTitle').textContent;
+      document.getElementById('newTripTitle').placeholder = 'misal: ' + oldTitle.replace('2026','2027');
+      goPage('settings');
     }
   });
 }
@@ -731,6 +784,141 @@ function showToast(msg){
 }
 
 function encKey(k){ return k.replace(/[^a-z0-9]/gi,'_'); }
+
+// ── ICON LIST ──────────────────────────────────────────────────────────────
+var ALL_ICONS = [
+  '🍽️','🍜','🍕','🍔','🌮','🍱','🥗','🍪','🍰','☕','🥤','🍦',
+  '⛽','🚗','🚌','✈️','🚢','🏍️','🚲','🛣️','🅿️','🚦',
+  '🏨','🏠','🏕️','⛺','🏖️','🏔️','🗺️','🧳','🎒',
+  '🛍️','👗','👟','👔','🎁','💎','🪭','🧸',
+  '🎡','🎢','🎭','🎪','🎬','🎮','⚽','🏊','🧗','🎯',
+  '💊','🏥','💉','🩺','🧴','🪥',
+  '📷','📱','💻','🎧','🔌','🖨️',
+  '🧧','💐','🎊','🎉','🎈','🪄',
+  '🏧','💰','💳','🪙','💵','📊','📋','🧾',
+  '🚗','🪪','📜','🔑','🛠️','🪛','🧹','🪣','🛁','🚿',
+  '👨‍👩‍👦','👨‍👧','👴','👵','👶','🐕','🐈',
+  '🌳','🌺','☀️','🌙','⭐','❄️','🌈','🌊',
+  '📦','🎯','✅','❓','💡','🔔','📌','🗑️','🔧','⚙️'
+];
+
+var iconPickerTarget = null;
+
+function openIconPicker(slug){
+  iconPickerTarget = slug;
+  var grid = document.getElementById('iconGrid');
+  var current = '';
+  var key = decKey(slug);
+  if(key && state.plans[key] !== undefined){
+    // find current icon
+    var row = document.getElementById('pr_'+slug);
+    if(row) current = row.querySelector('.plan-ic').textContent;
+  }
+  grid.innerHTML = ALL_ICONS.map(function(ic){
+    var sel = ic === current ? ' selected' : '';
+    return '<div class="icon-opt'+sel+'" data-ic="'+encodeURIComponent(ic)+'">'+ic+'</div>';
+  }).join('');
+  document.getElementById('iconGrid').onclick = function(e){
+    var opt = e.target.closest('.icon-opt');
+    if(opt) selectIcon(opt.dataset.ic);
+  };
+  document.getElementById('iconSearch').value = '';
+  document.getElementById('iconPickerOverlay').classList.add('show');
+}
+
+function filterIcons(){
+  var q = document.getElementById('iconSearch').value.toLowerCase();
+  var items = document.getElementById('iconGrid').querySelectorAll('.icon-opt');
+  items.forEach(function(el){
+    el.style.display = !q || el.textContent.includes(q) ? '' : 'none';
+  });
+}
+
+function selectIcon(encoded){
+  var ic = decodeURIComponent(encoded);
+  if(!iconPickerTarget) return;
+  var key = decKey(iconPickerTarget);
+  if(!key) return;
+  // Update ICONS map
+  ICONS[key] = ic;
+  // Update icon in settings row
+  var row = document.getElementById('pr_'+iconPickerTarget);
+  if(row) row.querySelector('.plan-ic').textContent = ic;
+  // Save icons to Firebase
+  if(typeof fbSetMeta === 'function') fbSetMeta({icons: ICONS});
+  closeIconPicker(null);
+  render();
+  showToast('Icon diubah: '+ic+' '+key);
+}
+
+function closeIconPicker(e){
+  if(e && e.target !== document.getElementById('iconPickerOverlay')) return;
+  document.getElementById('iconPickerOverlay').classList.remove('show');
+  iconPickerTarget = null;
+}
+
+// ── NEW TRIP ───────────────────────────────────────────────────────────────
+function doNewTrip(){
+  var newTitle = (document.getElementById('newTripTitle').value||'').trim();
+  var newSub   = (document.getElementById('newTripSub').value||'').trim();
+  if(!newTitle){ showToast('Masukkan judul perjalanan baru'); return; }
+  if(!confirm('Mulai perjalanan baru "'+newTitle+'"?\nSemua transaksi akan dihapus.\nRencana anggaran tetap dipertahankan.')) return;
+
+  // Reset transaksi dan dompet, tapi pertahankan plans
+  state.txData = [];
+  state.dompet = 0;
+
+  // Update judul dan subtitle
+  document.getElementById('appTitle').textContent = newTitle;
+  document.getElementById('appSub').textContent   = newSub || 'Perjalanan Baru';
+  document.title = newTitle;
+
+  // Simpan ke Firebase - reset semua kecuali plans dan icons
+  if(typeof fbSetMeta === 'function'){
+    fbSetMeta({
+      title:  newTitle,
+      sub:    newSub || 'Perjalanan Baru',
+      plans:  state.plans,
+      dompet: 0
+    });
+  }
+  // Hapus transaksi lama dan field ended di Firebase
+  if(typeof fbRemoveAllTx === 'function') fbRemoveAllTx();
+
+  // Sembunyikan banner
+  document.getElementById('newTripBanner').classList.remove('show');
+  // Kembali ke beranda
+  goPage('home');
+  render();
+  showToast('Perjalanan baru dimulai: '+newTitle);
+}
+
+// ── EDIT TITLE & SUB ───────────────────────────────────────────────────────
+function editTitle(){
+  var el=document.getElementById('appTitle'); var cur=el.textContent;
+  var inp=document.createElement('input'); inp.className='title-inp'; inp.value=cur; inp.maxLength=40;
+  el.replaceWith(inp); inp.focus(); inp.select();
+  function commit(){
+    var v=inp.value.trim()||cur; inp.replaceWith(el); el.textContent=v; document.title=v;
+    if(typeof fbSetMeta==='function') fbSetMeta({prevTitle:cur, title:v});
+    showToast('Judul disimpan');
+  }
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape')inp.replaceWith(el);});
+}
+
+function editSub(){
+  var el=document.getElementById('appSub'); var cur=el.textContent;
+  var inp=document.createElement('input'); inp.className='sub-inp'; inp.value=cur; inp.maxLength=40;
+  el.replaceWith(inp); inp.focus(); inp.select();
+  function commit(){
+    var v=inp.value.trim()||cur; inp.replaceWith(el); el.textContent=v;
+    if(typeof fbSetMeta==='function') fbSetMeta({sub:v});
+    showToast('Subtitle disimpan');
+  }
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape')inp.replaceWith(el);});
+}
 
 function openCatSheet(kat){
   var txs = state.txData.filter(function(t){ return (t.type==='tunai'||t.type==='rek') && t.kat===kat; });
@@ -925,7 +1113,7 @@ function renderSettings(){
   pc.innerHTML=Object.keys(state.plans).map(function(k){
     var ek=encKey(k);
     return '<div class="plan-row" id="pr_'+ek+'">'
-      +'<span class="plan-ic">'+(ICONS[k]||'&#128230;')+'</span>'
+      +'<span class="plan-ic" data-action="editicon" data-k="'+ek+'" style="cursor:pointer;font-size:20px" title="Ketuk untuk ganti icon">'+(ICONS[k]||'&#128230;')+'</span>'
       +'<div class="plan-name-wrap"><span class="plan-name" data-action="editname" data-k="'+ek+'" style="cursor:pointer">'+k
       +' <span class="plan-edit-ic">&#9999;&#65039;</span></span></div>'
       +'<span class="plan-nom" data-action="editnom" data-k="'+ek+'" style="cursor:pointer">'+fmt(state.plans[k])
@@ -942,6 +1130,7 @@ function renderSettings(){
     var el=e.target.closest('[data-action]'); if(!el) return;
     if(el.dataset.action==='editname') editPlanName(el.dataset.k);
     if(el.dataset.action==='editnom')  editPlanNom(el.dataset.k);
+    if(el.dataset.action==='editicon') openIconPicker(el.dataset.k);
   });
 }
 
@@ -1032,8 +1221,17 @@ try {
     if(obj.title!==undefined)  set(ref(db,'budget/title'),  obj.title);
     if(obj.sub!==undefined)    set(ref(db,'budget/sub'),    obj.sub);
     if(obj.plans!==undefined)  set(ref(db,'budget/plans'),  obj.plans);
+    if(obj.icons!==undefined)  set(ref(db,'budget/icons'),  obj.icons);
+    if(obj.dompet!==undefined) set(ref(db,'budget/dompet'), obj.dompet);
+    if(obj.ended!==undefined)  set(ref(db,'budget/ended'),  obj.ended);
     if(obj.txData===null)      set(ref(db,'budget/txData'), null);
     setTimeout(function(){ setSyncDot('ok'); },1000);
+  };
+  fbRemoveAllTx = function(){
+    setSyncDot('sync');
+    set(ref(db,'budget/txData'), null);
+    set(ref(db,'budget/dompet'), 0);
+    set(ref(db,'budget/ended'),  null);
   };
 
   // Listen for realtime updates
@@ -1041,8 +1239,12 @@ try {
     var data=snap.val();
     if(!data){ setSyncDot('ok'); return; }
     if(data.title){ state.title=data.title; document.getElementById('appTitle').textContent=data.title; document.title=data.title; }
+    if(data.prevTitle !== undefined) state.prevTitle = data.prevTitle || '';
     if(data.sub)  { state.sub=data.sub;     document.getElementById('appSub').textContent=data.sub; }
     if(data.plans){ state.plans=data.plans;  buildCatOptions(); }
+    if(data.icons){
+      Object.keys(data.icons).forEach(function(k){ ICONS[k]=data.icons[k]; });
+    }
     if(data.txData){
       state.txData=Object.keys(data.txData).map(function(k){ var t=data.txData[k]; t._fbKey=k; return t; }).sort(function(a,b){ return b.id-a.id; });
     } else { state.txData=[]; }
