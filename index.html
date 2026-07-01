@@ -574,8 +574,12 @@ function setTab(t){
 }
 function closeConfirm(){ document.getElementById('confirmOverlay').style.display='none'; }
 function closeEdit(){ document.getElementById('editOverlay').classList.remove('open'); document.getElementById('editSheet').classList.remove('open'); editingFbKey=null; }
+function normName(s){
+  return (s||'').replace(/\s+/g,' ').trim();
+}
+
 function addKategori(){
-  var name=(document.getElementById('newKatName').value||'').trim();
+  var name=normName(document.getElementById('newKatName').value);
   var nom=parseInt(document.getElementById('newKatNom').value)||0;
   if(!name){ showToast('Masukkan nama kategori'); return; }
   if(state.plans[name]!==undefined){ showToast('Kategori sudah ada'); return; }
@@ -675,25 +679,18 @@ function callAppsScript(action, onDone){
   if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf('GANTI') > -1){
     showToast('URL Apps Script belum diset'); return;
   }
-  var payload = {
-    action: action,
-    title:  document.getElementById('appTitle').textContent,
-    sub:    document.getElementById('appSub').textContent,
-    plans:  state.plans,
-    txData: state.txData
-  };
-  // Kirim via script tag - bypass CORS sepenuhnya
-  var encoded = encodeURIComponent(JSON.stringify(payload));
-  var url = APPS_SCRIPT_URL + '?payload=' + encoded + '&cb=' + Date.now();
+  // Apps Script langsung ambil data dari Firebase - tidak perlu kirim data dari app
+  // Cukup kirim sinyal action saja via script tag
+  var url = APPS_SCRIPT_URL + '?action=' + action + '&cb=' + Date.now();
   var script = document.createElement('script');
   script.src = url;
   script.onload = function(){
-    document.head.removeChild(script);
+    try{ document.head.removeChild(script); }catch(e){}
     if(onDone) onDone();
   };
   script.onerror = function(){
-    // Script tag selalu error karena response bukan JS - tapi data sudah terkirim
-    document.head.removeChild(script);
+    // Apps Script redirect ke HTML - script tag error normal, tapi request sudah terkirim
+    try{ document.head.removeChild(script); }catch(e){}
     if(onDone) onDone();
   };
   document.head.appendChild(script);
@@ -955,7 +952,7 @@ function editPlanName(slug){
   var inp=document.createElement('input'); inp.className='plan-name-inp'; inp.value=key; inp.maxLength=30;
   nameSpan.replaceWith(inp); inp.focus(); inp.select();
   function commit(){
-    var newName=inp.value.trim()||key;
+    var newName=normName(inp.value)||key;
     var val=state.plans[key]; delete state.plans[key]; state.plans[newName]=val;
     state.txData.forEach(function(t){ if(t.kat===key) t.kat=newName; });
     var newSlug=encKey(newName); row.id='pr_'+newSlug;
