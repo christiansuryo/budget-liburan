@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#D85A30">
 <link rel="manifest" href="./manifest.json">
-<title>Budget Mudik 2026</title>
+<title>Budget Perjalanan</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -281,11 +281,11 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   <div class="appbar-row">
     <div class="at-wrap">
       <div class="at-title-row" onclick="editTitle()">
-        <div class="at-title" id="appTitle">Budget Mudik 2026</div>
+        <div class="at-title" id="appTitle">Memuat...</div>
         <span class="at-edit">&#9999;&#65039;</span>
       </div>
       <div class="at-sub-row" onclick="editSub()">
-        <div class="at-sub" id="appSub">Liburan Sekolah</div>
+        <div class="at-sub" id="appSub"></div>
         <span class="at-edit">&#9999;&#65039;</span>
         <span class="sync-dot" id="syncDot" title="Status sinkronisasi"></span>
       </div>
@@ -569,7 +569,7 @@ var ICONS = {
   'Foto keluarga':'&#128247;','Lain-lain':'&#128230;','Ambil Tunai':'&#127975;'
 };
 var state = {
-  title:'Budget Mudik 2026', sub:'Liburan Sekolah',
+  title:'', sub:'',
   plans: Object.assign({}, PLANS_DEF),
   txData: [], dompet: 0, prevTitle: ''
 };
@@ -712,9 +712,12 @@ function openEdit(fbKey){
 
 
 function doReset(){
-  if(!confirm('Reset semua data di Firebase? Semua HP akan terpengaruh.')) return;
-  fbSetMeta({title:state.title,sub:state.sub,plans:Object.assign({},PLANS_DEF),dompet:0,txData:null});
-  showToast('Data direset');
+  if(!confirm('Reset semua data? Transaksi akan dihapus, judul dan anggaran tetap.')) return;
+  state.txData = [];
+  state.dompet = 0;
+  if(typeof fbRemoveAllTx === 'function') fbRemoveAllTx();
+  render();
+  showToast('Data transaksi direset');
 }
 
 // ── GOOGLE SHEETS SYNC ───────────────────────────────────────────
@@ -873,13 +876,14 @@ function doNewTrip(){
   document.getElementById('appSub').textContent   = newSub || 'Perjalanan Baru';
   document.title = newTitle;
 
-  // Simpan ke Firebase - reset semua kecuali plans dan icons
+  // Simpan judul, subtitle, dan reset transaksi di Firebase
   if(typeof fbSetMeta === 'function'){
     fbSetMeta({
-      title:  newTitle,
-      sub:    newSub || 'Perjalanan Baru',
-      plans:  state.plans,
-      dompet: 0
+      title:     newTitle,
+      sub:       newSub || 'Perjalanan Baru',
+      plans:     state.plans,
+      dompet:    0,
+      prevTitle: document.getElementById('appTitle').textContent
     });
   }
   // Hapus transaksi lama dan field ended di Firebase
