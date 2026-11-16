@@ -275,6 +275,31 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .kpi,.prog-card,.dompet-card,.rek-card,.cat-card,.tx-card{animation:up .22s ease both}
 ::-webkit-scrollbar{display:none}
+
+.nt-card{background:var(--wh);border-radius:var(--rmd);padding:14px 16px;box-shadow:var(--sh);margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--re)}
+.nt-card:active{background:var(--g0)}
+.nt-card-ic{font-size:26px}
+.nt-card-t{font-size:14px;font-weight:600;color:var(--g9)}
+.nt-card-s{font-size:12px;color:var(--g6);margin-top:3px;line-height:1.5}
+.nt-card-go{margin-left:auto;color:var(--g4);font-size:20px}
+.nt-tabs{display:flex;gap:8px;margin-bottom:14px}
+.nt-tab{flex:1;height:40px;border-radius:var(--rmd);border:1.5px solid var(--g1);background:var(--g0);font-family:var(--fn);font-size:14px;font-weight:600;color:var(--g6);cursor:pointer}
+.nt-tab.active{background:var(--or);border-color:var(--or);color:#fff}
+.nt-sum{background:var(--g0);border-radius:var(--rmd);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--g6);line-height:1.7}
+.nt-sum b{color:var(--g9)}
+.nt-sum-row{display:flex;justify-content:space-between}
+.nt-prep{margin-top:8px;padding-top:8px;border-top:1px dashed var(--g2)}
+.nt-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--g1)}
+.nt-chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--g2);background:#fff;color:transparent;font-size:16px;cursor:pointer;flex-shrink:0;font-family:var(--fn)}
+.nt-chk.done{background:var(--gr);border-color:var(--gr);color:#fff}
+.nt-main{flex:1;min-width:0}
+.nt-name{font-size:14px;font-weight:600;color:var(--g9)}
+.nt-name.done{text-decoration:line-through;color:var(--g4)}
+.nt-det{font-size:12px;color:var(--g6);margin-top:2px}
+.nt-del{background:none;border:none;color:var(--g2);font-size:18px;cursor:pointer;padding:4px 6px;border-radius:50%}
+.nt-del:active{color:var(--re);background:var(--re-l)}
+.nt-form{margin-top:16px;padding-top:14px;border-top:2px solid var(--g1)}
+.nt-form-t{font-size:11px;font-weight:600;color:var(--g4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -332,6 +357,11 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
       <div class="rek-lbl">&#127970; Pengeluaran dari rekening</div>
       <div class="rek-val" id="rekBig">Rp 0</div>
       <div class="rek-note">Transfer bank, QRIS, Kartu debit - tidak memengaruhi dompet</div>
+    </div>
+    <div class="nt-card" id="ntCard" onclick="openNotes()">
+      <div class="nt-card-ic">&#129511;</div>
+      <div><div class="nt-card-t">Catatan Angpau &amp; Oleh-oleh</div><div class="nt-card-s" id="ntCardSub">Ketuk untuk mulai mencatat</div></div>
+      <div class="nt-card-go">&#8250;</div>
     </div>
     <div class="sec">Persentase pengeluaran</div>
     <div class="pie-card" id="pieContainer">
@@ -498,6 +528,34 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
   </div>
 </div>
 
+<div class="overlay" id="notesOverlay" onclick="closeNotes()"></div>
+<div class="sheet" id="notesSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">Catatan Angpau &amp; Oleh-oleh</div>
+  <div class="nt-tabs">
+    <button class="nt-tab active" id="ntTab-angpau" data-nt-tab="angpau">&#129511; Angpau</button>
+    <button class="nt-tab" id="ntTab-oleh" data-nt-tab="oleh">&#127873; Oleh-oleh</button>
+  </div>
+  <div id="ntSum"></div>
+  <div id="ntListBox"></div>
+  <div class="nt-form" id="ntFormAngpau">
+    <div class="nt-form-t">Tambah penerima angpau</div>
+    <div class="f-field"><label class="f-lbl">Nama</label><input type="text" class="f-inp" id="ntANama" placeholder="mis. Mbah Putri"></div>
+    <div class="f-field"><label class="f-lbl">Nominal (Rp)</label><input type="number" class="f-inp" id="ntANom" inputmode="numeric" placeholder="0"></div>
+    <button class="btn-sub" style="background:var(--or)" data-nt-add="angpau">+ Tambah</button>
+  </div>
+  <div class="nt-form" id="ntFormOleh" style="display:none">
+    <div class="nt-form-t">Tambah penerima oleh-oleh</div>
+    <div class="f-field"><label class="f-lbl">Untuk siapa</label><input type="text" class="f-inp" id="ntONama" placeholder="mis. Keluarga Pakde"></div>
+    <div class="f-field"><label class="f-lbl">Oleh-oleh apa</label><input type="text" class="f-inp" id="ntOItem" placeholder="mis. Bakpia"></div>
+    <div class="f-row">
+      <div class="f-field"><label class="f-lbl">Jumlah bungkus</label><input type="number" class="f-inp" id="ntOQty" inputmode="numeric" placeholder="0"></div>
+      <div class="f-field"><label class="f-lbl">Harga/bungkus</label><input type="number" class="f-inp" id="ntOHarga" inputmode="numeric" placeholder="opsional"></div>
+    </div>
+    <button class="btn-sub" style="background:var(--or)" data-nt-add="oleh">+ Tambah</button>
+  </div>
+</div>
+
 <div class="overlay" id="editOverlay" onclick="closeEdit()"></div>
 <div class="edit-sheet" id="editSheet">
   <div class="sheet-handle"></div>
@@ -573,7 +631,8 @@ var ICONS = {
 var state = {
   title:'', sub:'',
   plans: Object.assign({}, PLANS_DEF),
-  txData: [], dompet: 0, prevTitle: ''
+  txData: [], dompet: 0, prevTitle: '',
+  notes: {angpau:{}, oleh:{}}
 };
 var today = new Date().toISOString().split('T')[0];
 var editingFbKey = null;
@@ -584,6 +643,7 @@ window.fbAddTx     = function(tx){ console.warn('Firebase not ready'); };
 window.fbRemoveTx  = function(k){  console.warn('Firebase not ready'); };
 window.fbSetMeta   = function(o){  console.warn('Firebase not ready'); };
 window.fbSetTx     = function(k,v){ console.warn('Firebase not ready'); };
+window.fbSetNote   = function(p,v){ console.warn('Firebase not ready'); };
 window.fbRemoveAllTx = function(){  console.warn('Firebase not ready'); };
 
 function setSyncDot(s){
@@ -602,6 +662,131 @@ function buildCatOptions(){
   document.getElementById('katTunai').innerHTML = opts;
   document.getElementById('katRek').innerHTML   = opts;
 }
+
+// ── CATATAN ANGPAU & OLEH-OLEH ──────────────────────────────────────────────
+var ntTab = 'angpau';
+function escN(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function ntItems(kind){
+  var o = (state.notes && state.notes[kind]) || {};
+  return Object.keys(o).map(function(k){ var v=o[k]||{}; return {k:k, v:v}; })
+    .sort(function(a,b){ return (a.v.ts||0)-(b.v.ts||0); });
+}
+function ntSet(kind, key, field, val){
+  if(!state.notes[kind]) state.notes[kind] = {};
+  if(field === null){
+    if(val === null) delete state.notes[kind][key]; else state.notes[kind][key] = val;
+    window.fbSetNote(kind+'/'+key, val);
+  } else {
+    if(state.notes[kind][key]) state.notes[kind][key][field] = val;
+    window.fbSetNote(kind+'/'+key+'/'+field, val);
+  }
+  renderNotes(); renderNotesCard();
+}
+function renderNotesCard(){
+  var A = ntItems('angpau'), O = ntItems('oleh');
+  var el = document.getElementById('ntCardSub');
+  if(!el) return;
+  if(!A.length && !O.length){ el.textContent = 'Ketuk untuk mulai mencatat'; return; }
+  var done = A.filter(function(x){ return x.v.done; }).length;
+  var tot = A.reduce(function(a,x){ return a + (Number(x.v.nom)||0); }, 0);
+  var bks = O.reduce(function(a,x){ return a + (Number(x.v.qty)||0); }, 0);
+  el.innerHTML = '&#129511; Angpau ' + done + '/' + A.length + ' diberi &middot; ' + fmt(tot) +
+                 '<br>&#127873; Oleh-oleh ' + bks + ' bungkus';
+}
+function renderNotes(){
+  var kind = ntTab, L = ntItems(kind), sum = '', html = '';
+  document.getElementById('ntTab-angpau').classList.toggle('active', kind==='angpau');
+  document.getElementById('ntTab-oleh').classList.toggle('active', kind==='oleh');
+  document.getElementById('ntFormAngpau').style.display = kind==='angpau' ? 'block' : 'none';
+  document.getElementById('ntFormOleh').style.display   = kind==='oleh'   ? 'block' : 'none';
+
+  if(kind === 'angpau'){
+    var tot=0, sdh=0, grp={};
+    L.forEach(function(x){
+      var n = Number(x.v.nom)||0; tot += n; if(x.v.done) sdh += n;
+      if(!x.v.done) grp[n] = (grp[n]||0) + 1;
+    });
+    var prep = Object.keys(grp).map(Number).sort(function(a,b){ return b-a; })
+      .map(function(n){ return '<b>' + grp[n] + '</b> amplop &times; ' + fmt(n); }).join('<br>');
+    sum = '<div class="nt-sum">' +
+      '<div class="nt-sum-row"><span>Total rencana (' + L.length + ' orang)</span><b>' + fmt(tot) + '</b></div>' +
+      '<div class="nt-sum-row"><span>Sudah diberi</span><b>' + fmt(sdh) + '</b></div>' +
+      '<div class="nt-sum-row"><span>Belum diberi</span><b>' + fmt(tot - sdh) + '</b></div>' +
+      (prep ? '<div class="nt-prep">Amplop yang masih perlu disiapkan:<br>' + prep + '</div>' : '') +
+      '</div>';
+    L.forEach(function(x){
+      var d = !!x.v.done;
+      html += '<div class="nt-row"><button class="nt-chk' + (d?' done':'') + '" data-nt-chk="' + x.k + '">&#10003;</button>' +
+        '<div class="nt-main"><div class="nt-name' + (d?' done':'') + '">' + escN(x.v.nama||'') + '</div>' +
+        '<div class="nt-det">' + fmt(Number(x.v.nom)||0) + '</div></div>' +
+        '<button class="nt-del" data-nt-del="' + x.k + '">&#10005;</button></div>';
+    });
+  } else {
+    var bk=0, biaya=0, sdhB=0, items={};
+    L.forEach(function(x){
+      var q = Number(x.v.qty)||0, h = Number(x.v.harga)||0;
+      bk += q; biaya += q*h; if(x.v.done) sdhB += q;
+      var nm = normName(x.v.item||'');
+      var key = nm.toLowerCase();
+      if(!items[key]) items[key] = {nm:nm, q:0};
+      items[key].q += q;
+    });
+    var prep2 = Object.keys(items).map(function(k){ return '<b>' + items[k].q + '</b> bungkus ' + escN(items[k].nm); }).join('<br>');
+    sum = '<div class="nt-sum">' +
+      '<div class="nt-sum-row"><span>Total bungkus (' + L.length + ' penerima)</span><b>' + bk + '</b></div>' +
+      '<div class="nt-sum-row"><span>Sudah diberikan</span><b>' + sdhB + ' bungkus</b></div>' +
+      '<div class="nt-sum-row"><span>Estimasi biaya</span><b>' + fmt(biaya) + '</b></div>' +
+      (prep2 ? '<div class="nt-prep">Yang perlu dibeli:<br>' + prep2 + '</div>' : '') +
+      '</div>';
+    L.forEach(function(x){
+      var d = !!x.v.done, q = Number(x.v.qty)||0, h = Number(x.v.harga)||0;
+      html += '<div class="nt-row"><button class="nt-chk' + (d?' done':'') + '" data-nt-chk="' + x.k + '">&#10003;</button>' +
+        '<div class="nt-main"><div class="nt-name' + (d?' done':'') + '">' + escN(x.v.nama||'') + '</div>' +
+        '<div class="nt-det">' + q + ' bungkus ' + escN(x.v.item||'') + (h ? ' &middot; ' + fmt(q*h) : '') + '</div></div>' +
+        '<button class="nt-del" data-nt-del="' + x.k + '">&#10005;</button></div>';
+    });
+  }
+  if(!L.length) html = '<div class="empty" style="padding:20px 0"><div>Belum ada catatan</div></div>';
+  document.getElementById('ntSum').innerHTML = sum;
+  document.getElementById('ntListBox').innerHTML = html;
+}
+function ntAdd(kind){
+  var key = 'n' + Date.now().toString(36) + Math.floor(Math.random()*1296).toString(36);
+  var o;
+  if(kind === 'angpau'){
+    var nama = normName(document.getElementById('ntANama').value);
+    var nom = parseInt(document.getElementById('ntANom').value) || 0;
+    if(!nama){ showToast('Isi nama penerima'); return; }
+    if(!nom){ showToast('Isi nominal'); return; }
+    o = {nama:nama, nom:nom, done:false, ts:Date.now()};
+    document.getElementById('ntANama').value = ''; document.getElementById('ntANom').value = '';
+  } else {
+    var nm = normName(document.getElementById('ntONama').value);
+    var it = normName(document.getElementById('ntOItem').value);
+    var qty = parseInt(document.getElementById('ntOQty').value) || 0;
+    var hg = parseInt(document.getElementById('ntOHarga').value) || 0;
+    if(!nm){ showToast('Isi nama penerima'); return; }
+    if(!it){ showToast('Isi jenis oleh-oleh'); return; }
+    if(!qty){ showToast('Isi jumlah bungkus'); return; }
+    o = {nama:nm, item:it, qty:qty, harga:hg, done:false, ts:Date.now()};
+    ['ntONama','ntOItem','ntOQty','ntOHarga'].forEach(function(id){ document.getElementById(id).value = ''; });
+  }
+  ntSet(kind, key, null, o);
+}
+function openNotes(){ renderNotes(); document.getElementById('notesOverlay').classList.add('open'); document.getElementById('notesSheet').classList.add('open'); }
+function closeNotes(){ document.getElementById('notesOverlay').classList.remove('open'); document.getElementById('notesSheet').classList.remove('open'); }
+document.getElementById('notesSheet').addEventListener('click', function(e){
+  var t = e.target.closest('[data-nt-tab],[data-nt-chk],[data-nt-del],[data-nt-add]');
+  if(!t) return;
+  if(t.hasAttribute('data-nt-tab')){ ntTab = t.getAttribute('data-nt-tab'); renderNotes(); }
+  else if(t.hasAttribute('data-nt-add')){ ntAdd(t.getAttribute('data-nt-add')); }
+  else if(t.hasAttribute('data-nt-chk')){
+    var k = t.getAttribute('data-nt-chk'), cur = state.notes[ntTab] && state.notes[ntTab][k];
+    if(cur) ntSet(ntTab, k, 'done', !cur.done);
+  }
+  else if(t.hasAttribute('data-nt-del')){ ntSet(ntTab, t.getAttribute('data-nt-del'), null, null); }
+});
+renderNotesCard();
 
 function goPage(p){
   document.querySelectorAll('.page').forEach(function(e){ e.classList.remove('active'); });
@@ -1247,6 +1432,7 @@ try {
   window.fbAddTx    = function(tx){ setSyncDot('sync'); push(ref(db,'budget/txData'),tx); };
   window.fbRemoveTx = function(k){  setSyncDot('sync'); remove(ref(db,'budget/txData/'+k)); };
   window.fbSetTx    = function(k,v){ setSyncDot('sync'); set(ref(db,'budget/txData/'+k),v); };
+  window.fbSetNote  = function(p,v){ setSyncDot('sync'); set(ref(db,'budget/notes/'+p),v); setTimeout(function(){ setSyncDot('ok'); },800); };
   window.fbSetMeta  = function(obj){
     setSyncDot('sync');
     if(obj.title!==undefined)  set(ref(db,'budget/title'),  obj.title);
@@ -1279,6 +1465,9 @@ try {
     if(data.txData){
       state.txData=Object.keys(data.txData).map(function(k){ var t=data.txData[k]; t._fbKey=k; return t; }).sort(function(a,b){ return b.id-a.id; });
     } else { state.txData=[]; }
+    state.notes = { angpau: (data.notes && data.notes.angpau) || {}, oleh: (data.notes && data.notes.oleh) || {} };
+    renderNotesCard();
+    if(document.getElementById('notesSheet').classList.contains('open')) renderNotes();
     setSyncDot('ok');
     render();
     var settings=document.getElementById('page-settings');
