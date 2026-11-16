@@ -276,6 +276,7 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 .kpi,.prog-card,.dompet-card,.rek-card,.cat-card,.tx-card{animation:up .22s ease both}
 ::-webkit-scrollbar{display:none}
 
+.ended-note{background:var(--gr-l);color:var(--gr);border-radius:var(--rmd);padding:12px 14px;margin-bottom:12px;font-size:13px;font-weight:500;line-height:1.5}
 .nt-card{background:var(--wh);border-radius:var(--rmd);padding:14px 16px;box-shadow:var(--sh);margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;border-left:4px solid var(--re)}
 .nt-card:active{background:var(--g0)}
 .nt-card-ic{font-size:26px}
@@ -332,6 +333,7 @@ html,body{font-family:var(--fn);background:var(--g0);color:var(--g9);min-height:
 
 <div class="content">
   <div class="page active" id="page-home">
+    <div class="ended-note" id="endedNote" style="display:none">&#9989; Perjalanan ini sudah ditutup. Ubah judul di atas (ketuk judulnya) untuk memulai perjalanan baru.</div>
     <div class="kpi-grid">
       <div class="kpi"><div class="kpi-lbl">&#128181; Keluar tunai</div><div class="kpi-val kv-am" id="kpiTunai">Rp 0</div></div>
       <div class="kpi"><div class="kpi-lbl">&#127970; Keluar rekening</div><div class="kpi-val kv-bl" id="kpiRek">Rp 0</div></div>
@@ -632,7 +634,8 @@ var state = {
   title:'', sub:'',
   plans: Object.assign({}, PLANS_DEF),
   txData: [], dompet: 0, prevTitle: '',
-  notes: {angpau:{}, oleh:{}}
+  notes: {angpau:{}, oleh:{}},
+  ended: ''
 };
 var today = new Date().toISOString().split('T')[0];
 var editingFbKey = null;
@@ -932,6 +935,7 @@ function callAppsScript(action, onDone){
 }
 
 function doSyncSheets(){
+  if(state.ended){ showToast('Perjalanan sudah ditutup. Ubah judul untuk perjalanan baru.'); return; }
   var statusEl = document.getElementById('sheetsStatus');
   if(statusEl) statusEl.textContent = 'Menyync...';
   callAppsScript('sync', function(){
@@ -946,8 +950,9 @@ function doEndJourney(){
   showToast('Membuat resume di Google Sheets...');
   callAppsScript('end_journey', function(){
     showToast('Resume berhasil dibuat! Siap buat perjalanan baru?');
+    state.ended = new Date().toISOString(); updateEndedNote();
     if(typeof fbSetMeta === 'function'){
-      fbSetMeta({ended: new Date().toISOString()});
+      fbSetMeta({ended: state.ended});
     }
     // Tampilkan banner buat perjalanan baru
     var banner = document.getElementById('newTripBanner');
@@ -963,7 +968,7 @@ function doEndJourney(){
 
 // Auto sync every 5 minutes
 setInterval(function(){
-  if(APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf('GANTI') === -1 && state.txData.length > 0){
+  if(APPS_SCRIPT_URL && APPS_SCRIPT_URL.indexOf('GANTI') === -1 && state.txData.length > 0 && !state.ended){
     doSyncSheets();
   }
 }, 5 * 60 * 1000);
@@ -1058,6 +1063,8 @@ function doNewTrip(){
   // Reset transaksi dan dompet, tapi pertahankan plans
   state.txData = [];
   state.dompet = 0;
+  state.ended  = '';
+  updateEndedNote();
 
   // Update judul dan subtitle
   document.getElementById('appTitle').textContent = newTitle;
@@ -1086,17 +1093,46 @@ function doNewTrip(){
 }
 
 // ── EDIT TITLE & SUB ───────────────────────────────────────────────────────
+function startTripFromTitle(newTitle, oldTitle){
+  state.txData = [];
+  state.dompet = 0;
+  state.ended  = '';
+  document.getElementById('appTitle').textContent = newTitle;
+  document.getElementById('appSub').textContent   = 'Perjalanan Baru';
+  document.title = newTitle;
+  if(typeof fbSetMeta === 'function'){
+    fbSetMeta({ title:newTitle, sub:'Perjalanan Baru', plans:state.plans, dompet:0, prevTitle:oldTitle });
+  }
+  if(typeof fbRemoveAllTx === 'function') fbRemoveAllTx();
+  var banner = document.getElementById('newTripBanner');
+  if(banner) banner.classList.remove('show');
+  render(); updateEndedNote();
+  showToast('Perjalanan baru dimulai: '+newTitle);
+}
+function updateEndedNote(){
+  var n = document.getElementById('endedNote');
+  if(n) n.style.display = state.ended ? 'block' : 'none';
+}
 function editTitle(){
   var el=document.getElementById('appTitle'); var cur=el.textContent;
   var inp=document.createElement('input'); inp.className='title-inp'; inp.value=cur; inp.maxLength=40;
   el.replaceWith(inp); inp.focus(); inp.select();
+  var finished=false;
   function commit(){
-    var v=inp.value.trim()||cur; inp.replaceWith(el); el.textContent=v; document.title=v;
-    if(typeof fbSetMeta==='function') fbSetMeta({prevTitle:cur, title:v});
+    if(finished) return; finished=true;
+    var v=inp.value.trim()||cur;
+    if(state.ended && v!==cur){
+      inp.replaceWith(el); el.textContent=cur;
+      if(!confirm('Perjalanan "'+cur+'" sudah ditutup.\nMulai perjalanan baru "'+v+'"?\nTransaksi dikosongkan, rencana anggaran dipertahankan.')) return;
+      startTripFromTitle(v, cur);
+      return;
+    }
+    inp.replaceWith(el); el.textContent=v; document.title=v;
+    if(v!==cur && typeof fbSetMeta==='function') fbSetMeta({prevTitle:cur, title:v});
     showToast('Judul disimpan');
   }
   inp.addEventListener('blur',commit);
-  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape')inp.replaceWith(el);});
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape'){finished=true;inp.replaceWith(el);}});
 }
 
 function editSub(){
@@ -1465,6 +1501,8 @@ try {
     if(data.txData){
       state.txData=Object.keys(data.txData).map(function(k){ var t=data.txData[k]; t._fbKey=k; return t; }).sort(function(a,b){ return b.id-a.id; });
     } else { state.txData=[]; }
+    state.ended = data.ended || '';
+    updateEndedNote();
     state.notes = { angpau: (data.notes && data.notes.angpau) || {}, oleh: (data.notes && data.notes.oleh) || {} };
     renderNotesCard();
     if(document.getElementById('notesSheet').classList.contains('open')) renderNotes();
